@@ -1,10 +1,10 @@
 #include "cache.h"
 
 Cache::Cache(unsigned int numberOfSets, unsigned int blocksPerSet, unsigned int bytesPerBlock,
-             const std::string& writeAllocate, const std::string& write,
+             const std::string& writeAllocate, const std::string& writeThrough,
              const std::string& eviction)
     : numberOfSets(numberOfSets), blocksPerSet(blocksPerSet), bytesPerBlock(bytesPerBlock),
-      writeAllocate(writeAllocate), writePolicy(write), evictionPolicy(eviction),
+      writeAllocate(writeAllocate), writeThrough(writeThrough), eviction(eviction),
       totalLoads(0), totalStores(0), loadHits(0), loadMisses(0),
       storeHits(0), storeMisses(0), totalCycles(0)
 {
