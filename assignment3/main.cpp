@@ -26,7 +26,7 @@ int main(int argc, char* argv[]) {
     unsigned int bytesPerBlock = std::atoi(argv[3]);
 
     std::string writeAllocate = argv[4];
-    std::string write = argv[5];
+    std::string writeThrough = argv[5];
     std::string eviction = argv[6];
 
     // check if cache params is valid  
@@ -47,9 +47,9 @@ int main(int argc, char* argv[]) {
     }
 
     bool checkIfWriteThrough;
-    if (write == "write-through") {
+    if (writeThrough == "write-through") {
         checkIfWriteThrough = true;
-    } else if (write == "write-back") {
+    } else if (writeThrough == "write-back") {
         checkIfWriteThrough = false;
     } else {
         std::cerr << "Error: write through command is invalid." << std::endl;
@@ -69,7 +69,7 @@ int main(int argc, char* argv[]) {
     }
 
     // create Cache obj
-    Cache cache(numberOfSets, blocksPerSet, bytesPerBlock, writeAllocate, write, eviction);
+    Cache cache(numberOfSets, blocksPerSet, bytesPerBlock, writeAllocate, writeThrough, eviction);
 
     // read trace file (simulate cache)
     std::string line;
