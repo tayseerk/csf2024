@@ -42,7 +42,7 @@ int main(int argc, char* argv[]) {
     } else if (writeAllocate == "no-write-allocate") {
         checkIfWriteAllocate = false;
     } else {
-        std::cerr << "Error: Invalid write allocate policy." << std::endl;
+        std::cerr << "Error: write allocate command is invalid." << std::endl;
         exit(EXIT_FAILURE);
     }
 
