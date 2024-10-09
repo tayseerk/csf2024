@@ -14,5 +14,9 @@ main.o: main.cpp cache.h
 cache.o: cache.cpp cache.h
 	$(CXX) $(CXXFLAGS) -c cache.cpp
 
+solution.zip :
+	rm -f $@
+	zip -9r $@ *.cpp *.h README.txt Makefile
+
 clean:
 	rm -f csim main.o cache.o
