@@ -3,10 +3,20 @@
 Cache::Cache(unsigned int numberOfSets, unsigned int blocksPerSet, unsigned int bytesPerBlock,
              const std::string& writeAllocate, const std::string& writeThrough,
              const std::string& eviction)
-    : numberOfSets(numberOfSets), blocksPerSet(blocksPerSet), bytesPerBlock(bytesPerBlock),
-      writeAllocate(writeAllocate), writeThrough(writeThrough), eviction(eviction),
-      totalLoads(0), totalStores(0), loadHits(0), loadMisses(0),
-      storeHits(0), storeMisses(0), totalCycles(0)
+    : numberOfSets(numberOfSets),
+      blocksPerSet(blocksPerSet),
+      bytesPerBlock(bytesPerBlock),
+      writeAllocate(writeAllocate),
+      writeThrough(writeThrough),
+      cacheSets(), // default initialization
+      totalLoads(0),
+      totalStores(0),
+      loadHits(0),
+      loadMisses(0),
+      storeHits(0),
+      storeMisses(0),
+      totalCycles(0),
+      eviction(eviction) // eviction has to be initialized after totalCycles
 {
     // initialize cache sets and blocks
     cacheSets.resize(numberOfSets, std::vector<Block>(blocksPerSet));
@@ -31,11 +41,13 @@ void Cache::accessCache(const std::string& accessType, unsigned int address) {
 }
 
 void Cache::load(unsigned int address) {
+    (void)address; // to prevent unused param warning
     // implement later
     ++totalLoads;
 }
 
 void Cache::store(unsigned int address) {
+    (void)address; // to prevent unused param warning
     // implement later
     ++totalStores;
 }
@@ -53,11 +65,14 @@ unsigned int Cache::findTag(unsigned int address) const {
 }
 
 int Cache::findBlockWithinSet(unsigned int setIndex, unsigned int tag) {
+    (void)setIndex; // to prevent unused param warning
+    (void)tag; // to prevent unused param warning
     // implement later - searching for the block within a set using a tag
     return -1; // not found (placeholder for now)
 }
 
 int Cache::chooseBlockToEvict(unsigned int setIndex) {
+    (void)setIndex; // to prevent unused param warning
     // implement later - find a block to evict based on the method
     return 0; // index of victim block (placeholder for now)
 }
