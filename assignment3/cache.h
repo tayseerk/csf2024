@@ -47,7 +47,6 @@ public:
     unsigned int totalCycles;
 
 private:
-
     unsigned int numberOfSets;
     unsigned int blocksPerSet;
     unsigned int bytesPerBlock;
