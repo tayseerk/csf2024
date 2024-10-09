@@ -3,20 +3,20 @@
 Cache::Cache(unsigned int numberOfSets, unsigned int blocksPerSet, unsigned int bytesPerBlock,
              const std::string& writeAllocate, const std::string& writeThrough,
              const std::string& eviction)
-    : numberOfSets(numberOfSets),
-      blocksPerSet(blocksPerSet),
-      bytesPerBlock(bytesPerBlock),
-      writeAllocate(writeAllocate),
-      writeThrough(writeThrough),
-      cacheSets(), // default initialization
-      totalLoads(0),
+    : totalLoads(0),
       totalStores(0),
       loadHits(0),
       loadMisses(0),
       storeHits(0),
       storeMisses(0),
       totalCycles(0),
-      eviction(eviction) // eviction has to be initialized after totalCycles
+      numberOfSets(numberOfSets),
+      blocksPerSet(blocksPerSet),
+      bytesPerBlock(bytesPerBlock),
+      writeAllocate(writeAllocate),
+      writeThrough(writeThrough),
+      eviction(eviction),
+      cacheSets() // default initialization
 {
     // initialize cache sets and blocks
     cacheSets.resize(numberOfSets, std::vector<Block>(blocksPerSet));
