@@ -4,6 +4,13 @@
 #include <vector>
 #include <string>
 
-// implement
+struct Block {
+    bool valid;
+    unsigned int tag;
+    bool dirty;
+    unsigned int timestamp; // for LRU/FIFO
+};
+
+// finish
 
 #endif // CACHE_H
