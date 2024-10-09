@@ -4,7 +4,7 @@
 
 *MS1*
 Tayseer Karrossi: Makefile, main.cpp, cache.cpp
-Emily Zou:
+Emily Zou: cache.h
 
 --------------------
 
