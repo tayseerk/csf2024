@@ -42,20 +42,47 @@ void Cache::accessCache(const std::string& accessType, unsigned int address) {
 
 void Cache::load(unsigned int address) {
     (void)address; // to prevent unused param warning
-    // implement later
+    // implement 
+    int found = findBlock(address); // if block is in cache
+    if (!found) { //block not in cache
+        ++loadMisses;
+        //load into cache
+    } else { //block is in cache
+        ++loadHits;
+    }
     ++totalLoads;
 }
 
 void Cache::store(unsigned int address) {
     (void)address; // to prevent unused param warning
-    // implement later
+    // implement 
+      int found = findBlock(address); // if block is in cache
+    if (!found) { //block not in cache
+        ++storeMisses;
+        //store into cache
+    } else { //block is in cache
+        ++storeHits;
+    }
     ++totalStores;
+}
+
+bool Cache::findBlock(unsigned int address) const {
+    unsigned int index = findSetIndex(address);
+    unsigned int tag = findTag(address);
+    int block = findBlockWithinSet(index, tag);
+    if (block == -1){
+        return false;
+    } else {
+        return true;
+    }
 }
 
 unsigned int Cache::findSetIndex(unsigned int address) const {
     // implement later - calculate set index using address
     // placeholder return 
+    double block_offset = log2(bytesPerBlock);
     return (address / bytesPerBlock) % numberOfSets;
+    
 }
 
 unsigned int Cache::findTag(unsigned int address) const {
@@ -64,7 +91,7 @@ unsigned int Cache::findTag(unsigned int address) const {
     return (address / bytesPerBlock) / numberOfSets;
 }
 
-int Cache::findBlockWithinSet(unsigned int setIndex, unsigned int tag) {
+int Cache::findBlockWithinSet(unsigned int setIndex, unsigned int tag) const {
     (void)setIndex; // to prevent unused param warning
     (void)tag; // to prevent unused param warning
     // implement later - searching for the block within a set using a tag

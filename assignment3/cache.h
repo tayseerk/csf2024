@@ -71,6 +71,17 @@ private:
     //
     void store(unsigned int address);
 
+    // Returns whether or not the block is in the cache
+    //
+    // Parameters:
+    //  address - address to find
+    //
+    // Returns:
+    //  true if the block is in the cache
+    //  false if the block is not in the cache
+    //
+    bool findBlock(unsigned int address) const;
+
     // Calculates an index for a set using its address
     //
     // Parameters:
@@ -101,7 +112,7 @@ private:
     //  -1 if not found
     //   0 if the block is found
     //
-    int findBlockWithinSet(unsigned int setIndex, unsigned int tag);
+    int findBlockWithinSet(unsigned int setIndex, unsigned int tag) const;
 
     // Selects the block that needs to be evicted
     //
