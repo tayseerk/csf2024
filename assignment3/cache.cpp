@@ -47,7 +47,7 @@ void Cache::load(unsigned int address) {
     bool found = findBlock(address); // if block is in cache
     if (!found) { //block not in cache
         ++loadMisses;
-        // implemet load into cache
+        loadToCache(address);
         totalCycles += 100;
     } else { //block is in cache
         ++loadHits;
