@@ -63,6 +63,14 @@ private:
     //
     void load(unsigned int address);
 
+    // Loads an address in the cache and 
+    // handles eviction
+    // 
+    // Parameters:
+    //  address - address to load
+    //
+    void loadToCache(unsigned int address);
+
     // Stores an address in the cache and 
     // increments totalStores 
     // 
@@ -70,6 +78,16 @@ private:
     //  address - address to store
     //
     void store(unsigned int address);
+
+    // checks if the set has no empty slots
+    // 
+    // Parameters:
+    // setIndex - index of set to look at
+    //
+    // Returns:
+    //  -1 if there is no empty slots
+    //  index of slot first empty slot found
+    int emptySlot(unsigned int setIndex);
 
     // Returns whether or not the block is in the cache
     //
