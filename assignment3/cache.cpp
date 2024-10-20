@@ -1,4 +1,5 @@
 #include "cache.h"
+#include <cmath>
 
 Cache::Cache(unsigned int numberOfSets, unsigned int blocksPerSet, unsigned int bytesPerBlock,
              const std::string& writeAllocate, const std::string& writeThrough,
@@ -42,26 +43,30 @@ void Cache::accessCache(const std::string& accessType, unsigned int address) {
 
 void Cache::load(unsigned int address) {
     (void)address; // to prevent unused param warning
-    // implement 
-    int found = findBlock(address); // if block is in cache
+
+    bool found = findBlock(address); // if block is in cache
     if (!found) { //block not in cache
         ++loadMisses;
-        //load into cache
+        // implemet load into cache
+        totalCycles += 100;
     } else { //block is in cache
         ++loadHits;
+        ++totalCycles;
     }
     ++totalLoads;
 }
 
 void Cache::store(unsigned int address) {
     (void)address; // to prevent unused param warning
-    // implement 
-      int found = findBlock(address); // if block is in cache
+
+    int found = findBlock(address); // if block is in cache
     if (!found) { //block not in cache
         ++storeMisses;
-        //store into cache
+        //implement store into cache
+        totalCycles += 100;
     } else { //block is in cache
         ++storeHits;
+        ++totalCycles;
     }
     ++totalStores;
 }
@@ -79,23 +84,30 @@ bool Cache::findBlock(unsigned int address) const {
 
 unsigned int Cache::findSetIndex(unsigned int address) const {
     // implement later - calculate set index using address
-    // placeholder return 
-    double block_offset = log2(bytesPerBlock);
-    return (address / bytesPerBlock) % numberOfSets;
+    // not sure if this is right
+    unsigned int blockOffset = log2(bytesPerBlock);
+    unsigned int indexBits = log2(numberOfSets*blocksPerSet);
+    unsigned int index = (address >> blockOffset) & ((1 << indexBits) - 1);
+    return index;
     
 }
 
 unsigned int Cache::findTag(unsigned int address) const {
-    // implement later - calculate tag using address
-    // placeholder return
-    return (address / bytesPerBlock) / numberOfSets;
+    // not sure if this is right
+    unsigned int blockOffset = log2(bytesPerBlock);
+    unsigned int indexBits = log2(numberOfSets*blocksPerSet);
+    unsigned int tag = address >> (blockOffset + indexBits);
+    return tag;
 }
 
 int Cache::findBlockWithinSet(unsigned int setIndex, unsigned int tag) const {
     (void)setIndex; // to prevent unused param warning
     (void)tag; // to prevent unused param warning
-    // implement later - searching for the block within a set using a tag
-    return -1; // not found (placeholder for now)
+    if (cacheSets[setIndex][tag].valid){
+        return 0;
+    } else{
+    return -1; // not found
+    }
 }
 
 int Cache::chooseBlockToEvict(unsigned int setIndex) {

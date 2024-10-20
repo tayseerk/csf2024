@@ -14,12 +14,12 @@ struct Block {
 // Initialize a cache -- sets and blocks
 // 
 // Parameters:
-//  numberOfSets - sets in cache
-//  blocksPerSet - blocks in each set
-//  bytesPerBlock - bytes in each block
+//  numberOfSets - number of sets in cache
+//  blocksPerSet - number of slots in a set
+//  bytesPerBlock - size of a block
 //  writeAllocate - string for write allocate
 //  writeThrough - string for writeThrough
-//  eviction - string for eviction
+//  eviction - string for eviction (FIFO or LRU)
 //
 // Returns
 //  Cache object
