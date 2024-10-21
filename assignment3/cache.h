@@ -64,7 +64,6 @@ private:
     void load(unsigned int address);
 
     // Loads an address in the cache and 
-    // handles eviction
     // 
     // Parameters:
     //  address - address to load
@@ -78,6 +77,24 @@ private:
     //  address - address to store
     //
     void store(unsigned int address);
+
+    // handles changes for stores according to
+    // it's specifications
+    // 
+    // Parameters:
+    //  address - address to store
+    //
+    void storeToCache(unsigned int address);
+
+    // Gets a free index to load/store 
+    // if no free slots, it will evict a block 
+    //
+    // Parameters:
+    //  address - address to store
+    //
+    // Returns:
+    // index of (newly) free slot
+    int getFreeIndex(unsigned int setIndex);
 
     // checks if the set has no empty slots
     // 
@@ -141,6 +158,25 @@ private:
     //  the index of the block to be evicted
     //
     int chooseBlockToEvict(unsigned int setIndex);
+
+    // For LRU method, finds the block that was
+    // accessed the least recent
+    //
+    // Parameters:
+    //  setIndex - the index of a set
+    //  
+    // Returns:
+    //  the index of the block least recently used
+    //
+    int findLeastRecentlyUsed(unsigned int setIndex);
+
+    // For LRU method, increments the timestamp
+    // of when each block was last accessed
+    //
+    // Parameters:
+    //  setIndex - the index of a set
+    //  
+    void incrementTimeStamps(unsigned int setIndex);
 };
 
 #endif // CACHE_H

@@ -45,11 +45,11 @@ void Cache::load(unsigned int address) {
     (void)address; // to prevent unused param warning
 
     bool found = findBlock(address); // if block is in cache
-    if (!found) { //block not in cache
+    if (!found) { // block not in cache
         ++loadMisses;
         loadToCache(address);
         totalCycles += 100;
-    } else { //block is in cache
+    } else { // block is in cache
         ++loadHits;
         ++totalCycles;
     }
@@ -59,16 +59,11 @@ void Cache::load(unsigned int address) {
 void Cache::loadToCache(unsigned int address) {
     unsigned int setIndex = findSetIndex(address);
     unsigned int tag = findTag(address);
-    int slotIndex; // index of slot to put block in
-    int i = emptySlot(setIndex); // temporary variable for finding empty slot
-    if (i == -1) { // if the set has no more empty slots
-        slotIndex = chooseBlockToEvict(setIndex); // evict a block
-    } else {
-        slotIndex = i; // empty slot found = slot for block
-    }
+    int slotIndex = getFreeIndex(setIndex);
     cacheSets[setIndex][slotIndex].valid = true; // make the block valid
     cacheSets[setIndex][slotIndex].tag = tag; // change the tag to this block's
-    // handle dirty and time stamp?
+    cacheSets[setIndex][slotIndex].timestamp = -1; // set to -1 (will increment to 0)
+    incrementTimeStamps(setIndex); // increment every time stamp in a set
 }
 
 void Cache::store(unsigned int address) {
@@ -78,12 +73,43 @@ void Cache::store(unsigned int address) {
     if (!found) { //block not in cache
         ++storeMisses;
         //implement store into cache
+        storeToCache(address);
         totalCycles += 100;
     } else { //block is in cache
+        // mark block dirty?
         ++storeHits;
         ++totalCycles;
     }
     ++totalStores;
+}
+
+void Cache::storeToCache(unsigned int address){
+    unsigned int setIndex = findSetIndex(address);
+    unsigned int tag = findTag(address);
+    int slotIndex = getFreeIndex(setIndex);
+    if (writeAllocate == "write-allocate"){
+        cacheSets[setIndex][slotIndex].valid = true; // make the block valid
+        cacheSets[setIndex][slotIndex].tag = tag; // change the tag to this block's
+        cacheSets[setIndex][slotIndex].timestamp = -1; // set to -1 (will increment to 0)
+        incrementTimeStamps(setIndex); // increment every time stamp in a set
+    }
+    if (writeThrough == "write-back" && writeAllocate != "write-back"){
+        cacheSets[setIndex][slotIndex].dirty = true;
+    } else {
+        //error
+    }
+
+}
+
+int Cache::getFreeIndex(unsigned int setIndex){
+    int slotIndex; // index of slot to put block in
+    int i = emptySlot(setIndex); // temporary variable for finding empty slot
+    if (i == -1) { // if the set has no more empty slots
+        slotIndex = chooseBlockToEvict(setIndex); // evict a block
+    } else {
+        slotIndex = i; // empty slot found = slot for block
+    }
+    return slotIndex;
 }
 
 int Cache::emptySlot(unsigned int setIndex){
@@ -129,7 +155,6 @@ int Cache::findBlockWithinSet(unsigned int setIndex, unsigned int tag) const {
     for (unsigned int i = 0; i < blocksPerSet; i++){
         if (cacheSets[setIndex][i].tag == tag){
             return 0; // found
-            // change time stamps? bc found = accessed
         }
     }
     return -1; // not found
@@ -137,7 +162,27 @@ int Cache::findBlockWithinSet(unsigned int setIndex, unsigned int tag) const {
 
 int Cache::chooseBlockToEvict(unsigned int setIndex) {
     (void)setIndex; // to prevent unused param warning
-    // implement later - find a block to evict based on the method
-    return 0; // index of victim block (placeholder for now)
+    if (eviction == "lru"){
+        int slotIndex = findLeastRecentlyUsed(setIndex);
+        return slotIndex;
+    } else { //FIFO implement later
+        return 0; // index of victim block (placeholder for now)
+    }
+}
+
+int Cache::findLeastRecentlyUsed(unsigned int setIndex){
+    int leastRecent = 0;
+    for (unsigned int i = 1; i < blocksPerSet; i++){
+        if(cacheSets[setIndex][leastRecent].timestamp < cacheSets[setIndex][i].timestamp){
+            leastRecent = i;
+        }
+    }
+    return leastRecent;
+}
+
+void Cache::incrementTimeStamps(unsigned int setIndex){
+        for (unsigned int i = 0; i < blocksPerSet; i++){
+            cacheSets[setIndex][i].timestamp++;
+    }
 }
 
