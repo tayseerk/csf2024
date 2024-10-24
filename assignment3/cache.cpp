@@ -62,15 +62,6 @@ void Cache::load(unsigned int address) {
 }
 
 void Cache::loadToCache(unsigned int address) {
-    /*
-    unsigned int setIndex = findSetIndex(address);
-    unsigned int tag = findTag(address);
-    int slotIndex = getFreeIndex(setIndex);
-    cacheSets[setIndex][slotIndex].valid = true; // make the block valid
-    cacheSets[setIndex][slotIndex].tag = tag; // change the tag to this block's
-    cacheSets[setIndex][slotIndex].timestamp = -1; // set to -1 (will increment to 0)
-    incrementTimeStamps(setIndex); // increment every time stamp in a set
-    */
     unsigned int setIndex = findSetIndex(address);
     unsigned int tag = findTag(address);
     int slotIndex = getFreeIndex(setIndex);
@@ -85,22 +76,7 @@ void Cache::loadToCache(unsigned int address) {
 }
 
 void Cache::store(unsigned int address) {
-    /*
-    int found = findBlock(address); // if block is in cache
-    if (!found) { //block not in cache
-        ++storeMisses;
-        //implement store into cache
-        storeToCache(address);
-        totalCycles += 100;
-    } else { //block is in cache
-        // mark block dirty?
-        ++storeHits;
-        ++totalCycles;
-    }
     ++totalStores;
-    */
-    ++totalStores;
-
     unsigned int setIndex = findSetIndex(address);
     unsigned int tag = findTag(address);
     int blockIndex = findBlockWithinSet(setIndex, tag);
@@ -125,7 +101,7 @@ void Cache::store(unsigned int address) {
             if (writeThrough == "write-through") {
                 totalCycles += 100; // write to mem
             } else {
-                std::cerr << "error: can't do both no-write-allocate and write-back." << std::endl;
+                std::cerr << "can't do both commands" << std::endl;
                 exit(EXIT_FAILURE);
             }
         }
@@ -152,27 +128,17 @@ void Cache::storeToCache(unsigned int address){
 }
 
 int Cache::getFreeIndex(unsigned int setIndex) {
-    /*
-    int slotIndex; // index of slot to put block in
-    int i = emptySlot(setIndex); // temporary variable for finding empty slot
-    if (i == -1) { // if the set has no more empty slots
-        slotIndex = chooseBlockToEvict(setIndex); // evict a block
-    } else {
-        slotIndex = i; // empty slot found = slot for block
-    }
-    return slotIndex;
-    */
-    int slotIndex = emptySlot(setIndex);
-    if (slotIndex == -1) {
-        slotIndex = chooseBlockToEvict(setIndex); // evict
+    int i = emptySlot(setIndex);
+    if (i == -1) {
+        i = chooseBlockToEvict(setIndex); // evict
         // write back dirty block if necessary
-        if (writeThrough == "write-back" && cacheSets[setIndex][slotIndex].dirty) {
+        if (writeThrough == "write-back" && cacheSets[setIndex][i].dirty) {
             totalCycles += (bytesPerBlock / 4) * 100; 
-            cacheSets[setIndex][slotIndex].dirty = false;
+            cacheSets[setIndex][i].dirty = false;
         }
-        cacheSets[setIndex][slotIndex].valid = false;
+        cacheSets[setIndex][i].valid = false;
     }
-    return slotIndex;
+    return i;
 }
 
 int Cache::emptySlot(unsigned int setIndex){
@@ -184,19 +150,6 @@ int Cache::emptySlot(unsigned int setIndex){
     return -1; // no empty slot found
 }
 
-/*
-  bool Cache::findBlock(unsigned int address) const {
-    unsigned int setIndex = findSetIndex(address);
-    unsigned int tag = findTag(address);
-    int block = findBlockWithinSet(setIndex, tag); 
-    if (block == -1){ // block not in cache
-        return false;
-    } else {
-        return true; // block is in cache
-    }
-}
-*/
-
 int Cache::findBlock(unsigned int address) const {
     unsigned int setIndex = findSetIndex(address);
     unsigned int tag = findTag(address);
@@ -204,16 +157,16 @@ int Cache::findBlock(unsigned int address) const {
 }
 
 unsigned int Cache::findSetIndex(unsigned int address) const {
-    unsigned int blockOffsetBits = std::log2(bytesPerBlock);
+    unsigned int offset = std::log2(bytesPerBlock);
     unsigned int indexBits = std::log2(numberOfSets);
-    unsigned int setIndex = (address >> blockOffsetBits) & ((1 << indexBits) - 1);
+    unsigned int setIndex = (address >> offset) & ((1 << indexBits) - 1);
     return setIndex;
 }
 
 unsigned int Cache::findTag(unsigned int address) const {
-    unsigned int blockOffsetBits = std::log2(bytesPerBlock);
+    unsigned int offset = std::log2(bytesPerBlock);
     unsigned int indexBits = std::log2(numberOfSets);
-    unsigned int tag = address >> (blockOffsetBits + indexBits);
+    unsigned int tag = address >> (offset + indexBits);
     return tag;
 }
 
@@ -230,21 +183,11 @@ int Cache::chooseBlockToEvict(unsigned int setIndex) {
     if (eviction == "lru") {
         return findLeastRecentlyUsed(setIndex);
     } else {
-        return 0; // placeholder 
+        return 0; // placeholder since fifo isn't required for ms2
     }
 }
 
 int Cache::findLeastRecentlyUsed(unsigned int setIndex) {
-    /*
-    int leastRecent = 0;
-    for (unsigned int i = 1; i < blocksPerSet; i++){
-        if(cacheSets[setIndex][leastRecent].timestamp < cacheSets[setIndex][i].timestamp){
-            leastRecent = i;
-        }
-    }
-    return leastRecent;
-}
-*/
     int lruIndex = 0;
     unsigned int maxTimestamp = cacheSets[setIndex][0].timestamp;
     for (unsigned int i = 1; i < blocksPerSet; i++) {
@@ -264,12 +207,3 @@ void Cache::updateLRU(unsigned int setIndex, int accessedIndex) {
     }
     cacheSets[setIndex][accessedIndex].timestamp = 0;
 }
-
-/* timestamp isn't being incremented properly
-void Cache::incrementTimeStamps(unsigned int setIndex){
-        for (unsigned int i = 0; i < blocksPerSet; i++){
-            cacheSets[setIndex][i].timestamp++;
-    }
-}
-*/
-
