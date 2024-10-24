@@ -172,12 +172,6 @@ private:
 
     // For LRU method, increments the timestamp
     // of when each block was last accessed
-    //
-    // Parameters:
-    //  setIndex - the index of a set
-    //  
-    // void incrementTimeStamps(unsigned int setIndex);
-
     void updateLRU(unsigned int setIndex, int accessedIndex); 
 
 };
