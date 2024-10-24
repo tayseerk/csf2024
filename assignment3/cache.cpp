@@ -1,5 +1,6 @@
 #include "cache.h"
 #include <cmath>
+#include <iostream>
 
 Cache::Cache(unsigned int numberOfSets, unsigned int blocksPerSet, unsigned int bytesPerBlock,
              const std::string& writeAllocate, const std::string& writeThrough,
@@ -42,21 +43,26 @@ void Cache::accessCache(const std::string& accessType, unsigned int address) {
 }
 
 void Cache::load(unsigned int address) {
-    (void)address; // to prevent unused param warning
-
-    bool found = findBlock(address); // if block is in cache
-    if (!found) { // block not in cache
-        ++loadMisses;
-        loadToCache(address);
-        totalCycles += 100;
-    } else { // block is in cache
-        ++loadHits;
-        ++totalCycles;
-    }
     ++totalLoads;
+
+    unsigned int setIndex = findSetIndex(address);
+    unsigned int tag = findTag(address);
+    int blockIndex = findBlockWithinSet(setIndex, tag);
+
+    if (blockIndex != -1) {
+        ++loadHits; // cache hit
+        totalCycles += 1;
+        updateLRU(setIndex, blockIndex); // update
+    } else {
+        ++loadMisses; // cache miss
+        loadToCache(address);
+        totalCycles += (bytesPerBlock / 4) * 100; // mem access cost
+        totalCycles += 1; // cache access after loading
+    }
 }
 
 void Cache::loadToCache(unsigned int address) {
+    /*
     unsigned int setIndex = findSetIndex(address);
     unsigned int tag = findTag(address);
     int slotIndex = getFreeIndex(setIndex);
@@ -64,11 +70,22 @@ void Cache::loadToCache(unsigned int address) {
     cacheSets[setIndex][slotIndex].tag = tag; // change the tag to this block's
     cacheSets[setIndex][slotIndex].timestamp = -1; // set to -1 (will increment to 0)
     incrementTimeStamps(setIndex); // increment every time stamp in a set
+    */
+    unsigned int setIndex = findSetIndex(address);
+    unsigned int tag = findTag(address);
+    int slotIndex = getFreeIndex(setIndex);
+
+    // load into cache
+    cacheSets[setIndex][slotIndex].valid = true;
+    cacheSets[setIndex][slotIndex].tag = tag;
+    cacheSets[setIndex][slotIndex].dirty = false;
+    cacheSets[setIndex][slotIndex].timestamp = 0;
+  
+    updateLRU(setIndex, slotIndex);
 }
 
 void Cache::store(unsigned int address) {
-    (void)address; // to prevent unused param warning
-
+    /*
     int found = findBlock(address); // if block is in cache
     if (!found) { //block not in cache
         ++storeMisses;
@@ -81,27 +98,61 @@ void Cache::store(unsigned int address) {
         ++totalCycles;
     }
     ++totalStores;
+    */
+    ++totalStores;
+
+    unsigned int setIndex = findSetIndex(address);
+    unsigned int tag = findTag(address);
+    int blockIndex = findBlockWithinSet(setIndex, tag);
+
+    if (blockIndex != -1) {
+        ++storeHits; // hit
+        totalCycles += 1;
+        updateLRU(setIndex, blockIndex);
+
+        if (writeThrough == "write-through") {
+            totalCycles += 100; // write to mem
+        } else if (writeThrough == "write-back") {
+            cacheSets[setIndex][blockIndex].dirty = true; // dirty block
+        }
+    } else {
+        ++storeMisses; // miss
+        if (writeAllocate == "write-allocate") {
+            storeToCache(address); // load 
+            totalCycles += (bytesPerBlock / 4) * 100; // mem access cost
+            totalCycles += 1; 
+        } else if (writeAllocate == "no-write-allocate") {
+            if (writeThrough == "write-through") {
+                totalCycles += 100; // write to mem
+            } else {
+                std::cerr << "error: can't do both no-write-allocate and write-back." << std::endl;
+                exit(EXIT_FAILURE);
+            }
+        }
+    }
 }
 
 void Cache::storeToCache(unsigned int address){
     unsigned int setIndex = findSetIndex(address);
     unsigned int tag = findTag(address);
     int slotIndex = getFreeIndex(setIndex);
-    if (writeAllocate == "write-allocate"){
-        cacheSets[setIndex][slotIndex].valid = true; // make the block valid
-        cacheSets[setIndex][slotIndex].tag = tag; // change the tag to this block's
-        cacheSets[setIndex][slotIndex].timestamp = -1; // set to -1 (will increment to 0)
-        incrementTimeStamps(setIndex); // increment every time stamp in a set
-    }
-    if (writeThrough == "write-back" && writeAllocate != "write-back"){
-        cacheSets[setIndex][slotIndex].dirty = true;
-    } else {
-        //error
-    }
 
+    // load
+    cacheSets[setIndex][slotIndex].valid = true;
+    cacheSets[setIndex][slotIndex].tag = tag;
+    cacheSets[setIndex][slotIndex].dirty = false;
+    cacheSets[setIndex][slotIndex].timestamp = 0;
+    updateLRU(setIndex, slotIndex);
+
+    if (writeThrough == "write-back") {
+        cacheSets[setIndex][slotIndex].dirty = true; // dirty block
+    } else if (writeThrough == "write-through") {
+        totalCycles += 100; // write to mem
+    }
 }
 
-int Cache::getFreeIndex(unsigned int setIndex){
+int Cache::getFreeIndex(unsigned int setIndex) {
+    /*
     int slotIndex; // index of slot to put block in
     int i = emptySlot(setIndex); // temporary variable for finding empty slot
     if (i == -1) { // if the set has no more empty slots
@@ -110,18 +161,31 @@ int Cache::getFreeIndex(unsigned int setIndex){
         slotIndex = i; // empty slot found = slot for block
     }
     return slotIndex;
+    */
+    int slotIndex = emptySlot(setIndex);
+    if (slotIndex == -1) {
+        slotIndex = chooseBlockToEvict(setIndex); // evict
+        // write back dirty block if necessary
+        if (writeThrough == "write-back" && cacheSets[setIndex][slotIndex].dirty) {
+            totalCycles += (bytesPerBlock / 4) * 100; 
+            cacheSets[setIndex][slotIndex].dirty = false;
+        }
+        cacheSets[setIndex][slotIndex].valid = false;
+    }
+    return slotIndex;
 }
 
 int Cache::emptySlot(unsigned int setIndex){
-    for (unsigned int i = 0; i < blocksPerSet; i++){ // for every slot within the set
-        if(!cacheSets[setIndex][i].valid){ // if slot is not valid == slot is empty
+    for (unsigned int i = 0; i < blocksPerSet; i++) { // for every slot within the set
+        if (!cacheSets[setIndex][i].valid) { // if slot is not valid == slot is empty
             return i; // set isn't full
         }
     }
     return -1; // no empty slot found
 }
 
-bool Cache::findBlock(unsigned int address) const {
+/*
+  bool Cache::findBlock(unsigned int address) const {
     unsigned int setIndex = findSetIndex(address);
     unsigned int tag = findTag(address);
     int block = findBlockWithinSet(setIndex, tag); 
@@ -131,46 +195,47 @@ bool Cache::findBlock(unsigned int address) const {
         return true; // block is in cache
     }
 }
+*/
+
+int Cache::findBlock(unsigned int address) const {
+    unsigned int setIndex = findSetIndex(address);
+    unsigned int tag = findTag(address);
+    return findBlockWithinSet(setIndex, tag);
+}
 
 unsigned int Cache::findSetIndex(unsigned int address) const {
-    // not sure if this is right
-    unsigned int blockOffset = log2(bytesPerBlock);
-    unsigned int indexBits = log2(numberOfSets*blocksPerSet);
-    unsigned int index = (address >> blockOffset) & ((1 << indexBits) - 1);
-    return index;
-    
+    unsigned int blockOffsetBits = std::log2(bytesPerBlock);
+    unsigned int indexBits = std::log2(numberOfSets);
+    unsigned int setIndex = (address >> blockOffsetBits) & ((1 << indexBits) - 1);
+    return setIndex;
 }
 
 unsigned int Cache::findTag(unsigned int address) const {
-    // not sure if this is right
-    unsigned int blockOffset = log2(bytesPerBlock);
-    unsigned int indexBits = log2(numberOfSets*blocksPerSet);
-    unsigned int tag = address >> (blockOffset + indexBits);
+    unsigned int blockOffsetBits = std::log2(bytesPerBlock);
+    unsigned int indexBits = std::log2(numberOfSets);
+    unsigned int tag = address >> (blockOffsetBits + indexBits);
     return tag;
 }
 
 int Cache::findBlockWithinSet(unsigned int setIndex, unsigned int tag) const {
-    (void)setIndex; // to prevent unused param warning
-    (void)tag; // to prevent unused param warning
-    for (unsigned int i = 0; i < blocksPerSet; i++){
-        if (cacheSets[setIndex][i].tag == tag){
-            return 0; // found
+    for (unsigned int i = 0; i < blocksPerSet; i++) {
+        if (cacheSets[setIndex][i].valid && cacheSets[setIndex][i].tag == tag) {
+            return i;
         }
     }
-    return -1; // not found
+    return -1;
 }
 
 int Cache::chooseBlockToEvict(unsigned int setIndex) {
-    (void)setIndex; // to prevent unused param warning
-    if (eviction == "lru"){
-        int slotIndex = findLeastRecentlyUsed(setIndex);
-        return slotIndex;
-    } else { //FIFO implement later
-        return 0; // index of victim block (placeholder for now)
+    if (eviction == "lru") {
+        return findLeastRecentlyUsed(setIndex);
+    } else {
+        return 0; // placeholder 
     }
 }
 
-int Cache::findLeastRecentlyUsed(unsigned int setIndex){
+int Cache::findLeastRecentlyUsed(unsigned int setIndex) {
+    /*
     int leastRecent = 0;
     for (unsigned int i = 1; i < blocksPerSet; i++){
         if(cacheSets[setIndex][leastRecent].timestamp < cacheSets[setIndex][i].timestamp){
@@ -179,10 +244,32 @@ int Cache::findLeastRecentlyUsed(unsigned int setIndex){
     }
     return leastRecent;
 }
+*/
+    int lruIndex = 0;
+    unsigned int maxTimestamp = cacheSets[setIndex][0].timestamp;
+    for (unsigned int i = 1; i < blocksPerSet; i++) {
+        if (cacheSets[setIndex][i].timestamp > maxTimestamp) {
+            maxTimestamp = cacheSets[setIndex][i].timestamp;
+            lruIndex = i;
+        }
+    }
+    return lruIndex;
+}
 
+void Cache::updateLRU(unsigned int setIndex, int accessedIndex) {
+    for (unsigned int i = 0; i < blocksPerSet; i++) {
+        if (cacheSets[setIndex][i].valid && int(i) != accessedIndex) {
+            cacheSets[setIndex][i].timestamp++;
+        }
+    }
+    cacheSets[setIndex][accessedIndex].timestamp = 0;
+}
+
+/* timestamp isn't being incremented properly
 void Cache::incrementTimeStamps(unsigned int setIndex){
         for (unsigned int i = 0; i < blocksPerSet; i++){
             cacheSets[setIndex][i].timestamp++;
     }
 }
+*/
 
