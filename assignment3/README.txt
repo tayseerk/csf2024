@@ -10,7 +10,12 @@ Emily Zou: cache.h
 
 *MS2*
 Tayseer Karrossi:
+
+debugged and fixed implementation for load, loadToCache, store, storeToCache, getFreeIndex, emptySlot, findBlock, findSetIndex, findTag, findBlockWithinSet, chooseBlockToEvict, and updateLRU
+
 Emily Zou:
+
+started implementation for load, loadToCache, store, storeToCache, getFreeIndex, emptySlot, findBlock, findSetIndex, findTag, findBlockWithinSet, chooseBlockToEvict, and updateLRU
 
 --------------------
 
