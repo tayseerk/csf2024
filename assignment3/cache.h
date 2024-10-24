@@ -115,7 +115,7 @@ private:
     //  true if the block is in the cache
     //  false if the block is not in the cache
     //
-    bool findBlock(unsigned int address) const;
+    int findBlock(unsigned int address) const;
 
     // Calculates an index for a set using its address
     //
@@ -176,7 +176,10 @@ private:
     // Parameters:
     //  setIndex - the index of a set
     //  
-    void incrementTimeStamps(unsigned int setIndex);
+    // void incrementTimeStamps(unsigned int setIndex);
+
+    void updateLRU(unsigned int setIndex, int accessedIndex); 
+
 };
 
 #endif // CACHE_H
