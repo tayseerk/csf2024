@@ -198,7 +198,7 @@ int Cache::chooseBlockToEvict(unsigned int setIndex) {
     if (eviction == "lru") {
         return findLeastRecentlyUsed(setIndex);
     } else if (eviction == "fifo") {
-        return findFirstIn(setIndex); // use fifo
+        return findFirstBlockIn(setIndex); // use fifo
     } else {
         std::cerr << "invalid eviction policy" << std::endl;
         exit(EXIT_FAILURE);
