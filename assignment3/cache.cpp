@@ -229,7 +229,6 @@ void Cache::updateLRU(unsigned int setIndex, int accessedIndex) {
 int Cache::findFirstBlockIn(unsigned int setIndex) {
     int index = 0;
     unsigned int minTimestamp = cacheSets[setIndex][0].timestamp;
-
     for (unsigned int i = 1; i < blocksPerSet; i++) {
         if (cacheSets[setIndex][i].timestamp < minTimestamp) {
             minTimestamp = cacheSets[setIndex][i].timestamp;
