@@ -18,6 +18,7 @@ Cache::Cache(unsigned int numberOfSets, unsigned int blocksPerSet, unsigned int 
       writeAllocate(writeAllocate),
       writeThrough(writeThrough),
       eviction(eviction),
+      currTimestamp(0),
       cacheSets() // default initialization
 {
     // initialize cache sets and blocks
@@ -44,20 +45,22 @@ void Cache::accessCache(const std::string& accessType, unsigned int address) {
 
 void Cache::load(unsigned int address) {
     ++totalLoads;
-
     unsigned int setIndex = findSetIndex(address);
     unsigned int tag = findTag(address);
     int blockIndex = findBlockWithinSet(setIndex, tag);
 
     if (blockIndex != -1) {
-        ++loadHits; // cache hit
+        ++loadHits; // hit
         totalCycles += 1;
-        updateLRU(setIndex, blockIndex); // update
+        if (eviction == "lru") {
+            updateLRU(setIndex, blockIndex); // update 
+        }
+        // nothing needs to be done for fifo when hit
     } else {
-        ++loadMisses; // cache miss
+        ++loadMisses; // miss
         loadToCache(address);
         totalCycles += (bytesPerBlock / 4) * 100; // mem access cost
-        totalCycles += 1; // cache access after loading
+        totalCycles += 1; // access cache after
     }
 }
 
@@ -70,9 +73,14 @@ void Cache::loadToCache(unsigned int address) {
     cacheSets[setIndex][slotIndex].valid = true;
     cacheSets[setIndex][slotIndex].tag = tag;
     cacheSets[setIndex][slotIndex].dirty = false;
-    cacheSets[setIndex][slotIndex].timestamp = 0;
-  
-    updateLRU(setIndex, slotIndex);
+
+    // for lru
+    if (eviction == "lru") {
+        cacheSets[setIndex][slotIndex].timestamp = 0;
+        updateLRU(setIndex, slotIndex);
+    } else if (eviction == "fifo") {
+        cacheSets[setIndex][slotIndex].timestamp = currTimestamp++; // for fifo
+    }
 }
 
 void Cache::store(unsigned int address) {
@@ -84,8 +92,10 @@ void Cache::store(unsigned int address) {
     if (blockIndex != -1) {
         ++storeHits; // hit
         totalCycles += 1;
-        updateLRU(setIndex, blockIndex);
-
+        if (eviction == "lru") {
+            updateLRU(setIndex, blockIndex); // update
+        }
+        // nothing needs to be done for fifo when hit
         if (writeThrough == "write-through") {
             totalCycles += 100; // write to mem
         } else if (writeThrough == "write-back") {
@@ -94,9 +104,9 @@ void Cache::store(unsigned int address) {
     } else {
         ++storeMisses; // miss
         if (writeAllocate == "write-allocate") {
-            storeToCache(address); // load 
+            storeToCache(address);
             totalCycles += (bytesPerBlock / 4) * 100; // mem access cost
-            totalCycles += 1; 
+            totalCycles += 1; // access cache after 
         } else if (writeAllocate == "no-write-allocate") {
             if (writeThrough == "write-through") {
                 totalCycles += 100; // write to mem
@@ -113,15 +123,20 @@ void Cache::storeToCache(unsigned int address){
     unsigned int tag = findTag(address);
     int slotIndex = getFreeIndex(setIndex);
 
-    // load
+    // load into cache
     cacheSets[setIndex][slotIndex].valid = true;
     cacheSets[setIndex][slotIndex].tag = tag;
     cacheSets[setIndex][slotIndex].dirty = false;
-    cacheSets[setIndex][slotIndex].timestamp = 0;
-    updateLRU(setIndex, slotIndex);
+
+    if (eviction == "lru") {
+        cacheSets[setIndex][slotIndex].timestamp = 0;
+        updateLRU(setIndex, slotIndex);
+    } else if (eviction == "fifo") {
+        cacheSets[setIndex][slotIndex].timestamp = currTimestamp++; // for fifo
+    }
 
     if (writeThrough == "write-back") {
-        cacheSets[setIndex][slotIndex].dirty = true; // dirty block
+        cacheSets[setIndex][slotIndex].dirty = true;
     } else if (writeThrough == "write-through") {
         totalCycles += 100; // write to mem
     }
@@ -182,8 +197,8 @@ int Cache::findBlockWithinSet(unsigned int setIndex, unsigned int tag) const {
 int Cache::chooseBlockToEvict(unsigned int setIndex) {
     if (eviction == "lru") {
         return findLeastRecentlyUsed(setIndex);
-    } else {
-        return 0; // placeholder since fifo isn't required for ms2
+    } else if (eviction == "fifo") {
+        return findFirstIn(setIndex); // use fifo
     }
 }
 
@@ -206,4 +221,17 @@ void Cache::updateLRU(unsigned int setIndex, int accessedIndex) {
         }
     }
     cacheSets[setIndex][accessedIndex].timestamp = 0;
+}
+
+int Cache::findFirstIn(unsigned int setIndex) {
+    int index = 0;
+    unsigned int minTimestamp = cacheSets[setIndex][0].timestamp;
+
+    for (unsigned int i = 1; i < blocksPerSet; i++) {
+        if (cacheSets[setIndex][i].timestamp < minTimestamp) {
+            minTimestamp = cacheSets[setIndex][i].timestamp;
+            index = i;
+        }
+    }
+    return index;
 }
