@@ -28,7 +28,7 @@ Emily Zou:
 Tayseer Karrossi:
 
 - modified implementation for loadToCache, storeToCache, load, store, and chooseBlockToEvict
-- implemented findFirstBlock
+- implemented findFirstBlockIn
 
 Emily Zou:
 
