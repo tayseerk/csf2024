@@ -55,6 +55,8 @@ private:
     std::string eviction;
     std::vector<std::vector<Block>> cacheSets;
 
+    unsigned int currTimestamp; // for fifo
+
     // Loads an address in the cache and 
     // increments totalLoads 
     // 
@@ -112,8 +114,8 @@ private:
     //  address - address to find
     //
     // Returns:
-    //  true if the block is in the cache
-    //  false if the block is not in the cache
+    //  index of the block if it is in the cache
+    //  -1 if the block is not in the cache
     //
     int findBlock(unsigned int address) const;
 
@@ -145,7 +147,7 @@ private:
     //
     // Returns:
     //  -1 if not found
-    //   0 if the block is found
+    //  index of the block if found 
     //
     int findBlockWithinSet(unsigned int setIndex, unsigned int tag) const;
 
@@ -173,6 +175,15 @@ private:
     // For LRU method, increments the timestamp
     // of when each block was last accessed
     void updateLRU(unsigned int setIndex, int accessedIndex); 
+
+    // For FIFO, finds the block that was loaded first
+    //
+    // Parameters:
+    //  setIndex - the index of a set
+    //
+    // Returns:
+    //  index of the block that was loaded first
+    int findFirstIn(unsigned int setIndex);
 
 };
 
