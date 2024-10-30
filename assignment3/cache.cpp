@@ -18,8 +18,8 @@ Cache::Cache(unsigned int numberOfSets, unsigned int blocksPerSet, unsigned int 
       writeAllocate(writeAllocate),
       writeThrough(writeThrough),
       eviction(eviction),
-      currTimestamp(0),
-      cacheSets() // default initialization
+      cacheSets(), // default initialization
+      currTimestamp(0)
 {
     // initialize cache sets and blocks
     cacheSets.resize(numberOfSets, std::vector<Block>(blocksPerSet));
@@ -199,6 +199,9 @@ int Cache::chooseBlockToEvict(unsigned int setIndex) {
         return findLeastRecentlyUsed(setIndex);
     } else if (eviction == "fifo") {
         return findFirstIn(setIndex); // use fifo
+    } else {
+        std::cerr << "invalid eviction policy" << std::endl;
+        exit(EXIT_FAILURE);
     }
 }
 
