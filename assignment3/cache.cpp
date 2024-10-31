@@ -198,7 +198,7 @@ int Cache::chooseBlockToEvict(unsigned int setIndex) {
     if (eviction == "lru") {
         return findLeastRecentlyUsed(setIndex);
     } else if (eviction == "fifo") {
-        return findFirstIn(setIndex); // use fifo
+        return findFirstBlockIn(setIndex); // use fifo
     } else {
         std::cerr << "invalid eviction policy" << std::endl;
         exit(EXIT_FAILURE);
@@ -226,10 +226,9 @@ void Cache::updateLRU(unsigned int setIndex, int accessedIndex) {
     cacheSets[setIndex][accessedIndex].timestamp = 0;
 }
 
-int Cache::findFirstIn(unsigned int setIndex) {
+int Cache::findFirstBlockIn(unsigned int setIndex) {
     int index = 0;
     unsigned int minTimestamp = cacheSets[setIndex][0].timestamp;
-
     for (unsigned int i = 1; i < blocksPerSet; i++) {
         if (cacheSets[setIndex][i].timestamp < minTimestamp) {
             minTimestamp = cacheSets[setIndex][i].timestamp;

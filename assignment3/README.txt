@@ -26,6 +26,10 @@ Emily Zou:
 
 *MS3*
 Tayseer Karrossi:
+
+- modified implementation for loadToCache, storeToCache, load, store, and chooseBlockToEvict
+- implemented findFirstBlockIn
+
 Emily Zou: Read Me - Best Cache Write-Up
 
 Best Cache Write-Up:

@@ -183,7 +183,7 @@ private:
     //
     // Returns:
     //  index of the block that was loaded first
-    int findFirstIn(unsigned int setIndex);
+    int findFirstBlockIn(unsigned int setIndex);
 
 };
 
