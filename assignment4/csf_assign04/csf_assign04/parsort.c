@@ -15,6 +15,16 @@ int quicksort( int64_t *arr, unsigned long start, unsigned long end, unsigned lo
 
 // TODO: declare additional helper functions if needed
 
+typedef struct {
+    pid_t pid;
+    int status; 
+    int success;
+} Child;
+
+Child quicksort_subproc( int64_t *arr, unsigned long start, unsigned long end, unsigned long par_threshold );
+void quicksort_wait( Child *this_child );
+int quicksort_check_success (Child *this_child);
+
 int main( int argc, char **argv ) {
   unsigned long par_threshold;
   if ( argc != 3 || sscanf( argv[2], "%lu", &par_threshold ) != 1 ) {
@@ -22,18 +32,46 @@ int main( int argc, char **argv ) {
     exit( 1 );
   }
 
-  int fd;
+  const char *filename = argv[1];
 
   // open the named file
   // TODO: open the named file
+
+  int fd = open(filename, O_RDWR); // open returns -1 if file couldn't be opened
+  if (fd < 0){
+    fprintf(stderr, "File couldn't be opened\n");
+    exit(1);
+  }
 
   // determine file size and number of elements
   unsigned long file_size, num_elements;
   // TODO: determine the file size and number of elements
 
+  struct stat statbuf;
+  int rc = fstat( fd, &statbuf );
+  if ( rc != 0 ) {
+      fprintf(stderr, "Could not retrieve file information\n");
+      exit(1);
+  }
+  // statbuf.st_size indicates the number of bytes in the file
+
+  file_size = statbuf.st_size;
+  num_elements = file_size/sizeof(int64_t);
+
+
   // mmap the file data
   int64_t *arr;
   // TODO: mmap the file data
+  arr = mmap( NULL, file_size, PROT_READ | PROT_WRITE, MAP_SHARED, fd, 0 );
+  close( fd ); // file can be closed now
+  if ( arr == MAP_FAILED ) {
+      fprintf(stderr, "mmap failed\n");
+      exit(1);
+  }
+  // *arr now behaves like a standard array of int64_t.
+  // Be careful though! Going off the end of the array will
+  // silently extend the file, which can rapidly lead to
+  // disk space depletion!
 
   // Sort the data!
   int success;
@@ -45,6 +83,8 @@ int main( int argc, char **argv ) {
 
   // Unmap the file data
   // TODO: unmap the file data
+
+  munmap( arr, file_size);
 
   return 0;
 }
@@ -177,11 +217,73 @@ int quicksort( int64_t *arr, unsigned long start, unsigned long end, unsigned lo
 
   // Recursively sort the left and right partitions
   int left_success, right_success;
-  // TODO: modify this code so that the recursive calls execute in child processes
-  left_success = quicksort( arr, start, mid, par_threshold );
-  right_success = quicksort( arr, mid + 1, end, par_threshold );
+  
+  Child left, right;
+  left = quicksort_subproc( arr, start, mid, par_threshold );
+  right = quicksort_subproc( arr, mid + 1, end, par_threshold );
+
+  quicksort_wait( &left );
+  quicksort_wait( &right );
+
+  left_success = quicksort_check_success( &left );
+  right_success = quicksort_check_success( &right );
 
   return left_success && right_success;
 }
-
+// TODO: modify this code so that the recursive calls execute in child processes
 // TODO: define additional helper functions if needed
+
+Child quicksort_subproc( int64_t *arr, unsigned long start, unsigned long end, unsigned long par_threshold ) {
+
+  Child this_child;
+  pid_t child_pid = fork();
+  if ( child_pid == 0 ) {
+    // executing in the child
+    int child_success = quicksort( arr, start, end, par_threshold );
+    if ( child_success == 1 )
+      exit( 0 );
+    else
+      exit( 1 );
+  } else if ( child_pid < 0 ) {
+    // child can't be created and fork fails
+    this_child.success = 0;
+  } else {
+    // in parent
+    this_child.pid = child_pid;
+    this_child.success = 1;
+  }
+  
+  return this_child;
+}
+
+void quicksort_wait( Child *this_child){
+  if (this_child->success != 1){
+    return;
+  }
+  int rc, wstatus; //rc = child_pid is successful, rc = -1 is unsuccesful
+  rc = waitpid( this_child->pid, &wstatus, 0 );
+  if ( rc < 0 ) {
+    // waitpid failed, rc = -1
+    this_child->success = 0;
+  } else {
+    // check status of child
+    if ( !WIFEXITED( wstatus ) ) {
+      // child did not exit normally (e.g., it was terminated by a signal)
+      this_child->success = 0;
+    } else if ( WEXITSTATUS( wstatus ) != 0 ) {
+      // child exited with a non-zero exit code
+      this_child->success = 0;
+    } else {
+      // child exited with exit code zero (it was successful)
+      this_child->success = 1;
+    }
+  }
+}
+
+int quicksort_check_success (Child *this_child){
+  return this_child->success;
+}
+
+
+
+
