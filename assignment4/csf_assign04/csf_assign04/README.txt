@@ -1,7 +1,10 @@
 CONTRIBUTIONS
 
-TODO: write a brief summary of how each team member contributed to
-the project.
+Emily Zou:
+- completed Task 1, Task 2, and Task 3
+
+Tayseer Karrossi:
+- fixed Task 3 and completed Task 4
 
 REPORT
 
