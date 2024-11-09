@@ -68,6 +68,12 @@ int main( int argc, char **argv ) {
       fprintf(stderr, "mmap failed\n");
       exit(1);
   }
+
+  if (close( fd ) == -1) {
+    fprintf(stderr, "couldn't close file\n");
+    exit(1);
+  }
+
   // *arr now behaves like a standard array of int64_t.
   // Be careful though! Going off the end of the array will
   // silently extend the file, which can rapidly lead to
@@ -85,6 +91,11 @@ int main( int argc, char **argv ) {
   // TODO: unmap the file data
 
   munmap( arr, file_size);
+  if (munmap( arr, file_size ) == -1) {
+    fprintf(stderr, "unmapping the file failed\n");
+    exit(1);
+  }
+
 
   return 0;
 }
@@ -234,8 +245,7 @@ int quicksort( int64_t *arr, unsigned long start, unsigned long end, unsigned lo
 // TODO: define additional helper functions if needed
 
 Child quicksort_subproc( int64_t *arr, unsigned long start, unsigned long end, unsigned long par_threshold ) {
-
-  Child this_child;
+  Child this_child = {.pid = -1, .status = 0, .success = 0}; // double check
   pid_t child_pid = fork();
   if ( child_pid == 0 ) {
     // executing in the child
