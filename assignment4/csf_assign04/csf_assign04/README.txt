@@ -292,15 +292,38 @@ sys   0m0.473s
 
 *Analysis*
 
-The real time decreases as you decrease the parallel threshold since the avg real time for the threshold 2097152 is 0.836s where as for the threshold 131072, it is 0.209s which is significantly lower. The performance improvement is due to increased parallelism and better CPU utilization. Lowering the threshold lets the program create more child processes earlier during recursion, allowing more of the array to be sorted at the same time. With more child processes created, the program can also optimize its usage of the 4 CPU cores, which would reduce the total real time. 
+The real time decreases as you decrease the parallel threshold since the average real time for the threshold 2097152 
+is 0.836s whereas for the threshold 131072, it is 0.209s, which is significantly lower. The performance improvement 
+is due to increased parallelism and better CPU utilization. Lowering the threshold lets the program create more child
+processes earlier during recursion, allowing more of the array to be sorted at the same time. With more child processes 
+created, the program can also optimize its usage of the 4 CPU cores, which would reduce the total real time. 
 
-The decrease in real time occurs gradually as you decrease the threshold until the improvement in performance plateaus once you reach 131072. Any threshold less than 131072 (inclusive) ranges from 0.201 to 0.209 seconds. The main reason that the improvements become minimal is the limited number of CPU cores. Once you create enough child processes, you use all of the cores available (4 of them) and by adding more processes, the real time doesn't improve any further. Another reason for the plateau could also be that the benefit of parallelism diminishes once the workload per child process is too small relative to the overhead. 
+The decrease in real time occurs gradually as you decrease the threshold until the improvement in performance plateaus 
+once you reach 131072. Any threshold less than 131072 (inclusive) ranges from 0.201 to 0.209 seconds. The main reason 
+the improvements become minimal is the limited number of CPU cores. Once you create enough child processes, you 
+use all of the cores available (4), and by adding more processes, the real time doesn't improve any further. 
+Another reason for the plateau could be that the benefit of parallelism diminishes once the workload per child 
+process is too small relative to the overhead. 
 
-The average user time also decreases until it reaches the "plateau" threshold of 131072. Anything threshold lower than 131072 results in an increase in avg user time. This is represented in the data where the threshold of 2097152 has an avg user time of 0.789s and it decreases until you reach 131072 which has an avg user time of 0.681s. After that threshold, the avg user time starts to increase where the threshold of 16384 has an avg user time of 0.776s (almost as high as the 2097152 threshold). This occurs because of the same reason, the performance increase plateaus for the real time. Once you reach a threshold that creates enough child processes to utilize all 4 CPU cores, any additional child processes would add to the user time (increased CPU usage) since there are more recursive func calls and computations. 
+The average user time also decreases until it reaches the "plateau" threshold of 131072. Anything threshold lower 
+than 131072 results in an increase in average user time. This is represented in the data where the threshold of 2097152 
+has an average user time of 0.789s, and it decreases until you reach 131072, which has an average user time of 0.681s. After that 
+threshold, the average user time starts to increase, where the threshold of 16384 has an average user time of 0.776s (almost as 
+high as the 2097152 threshold). This occurs for the same reason: the performance increases plateaus for the real 
+time. Once you reach a threshold that creates enough child processes to utilize all 4 CPU cores, additional child 
+processes would add to the user time (increased CPU usage) since there are more recursive func calls and computations. 
 
-The average system time increases as you decrease the threshold since the highest threshold 2097152 has an avg sys time of 0.037s and the lowest threshold 16384 has an avg system time of 0.473s. This is because as more processes are made, the time spent on system calls and kernel operations increases. As the number of child processes increases, the number of 'fork' calls increases. Additionally, with more child processes, the OS scheduler and memory have to handle more processes which adds to the system time. 
+The average system time increases as you decrease the threshold since the highest threshold, 2097152, has an average sys time 
+of 0.037s, and the lowest threshold, 16384, has an average system time of 0.473s. This is because the time spent on system calls 
+and kernel operations increases as more processes are made. As the number of child processes increases, the number of 'fork' calls 
+increases. Additionally, with more child processes, the OS scheduler and memory must handle more processes, 
+which adds to the system's time. 
 
-Based on all the results observed, the most optimal threshold for parsort would be 131072 because it balances the parallelism and overhead. At the threshold of 131072, the avg real and user time are at their lowest values before the plateau occurs. Additionally, it also has a good avg sys time since it is less than half of our range. The highest sys time is for the lowest threshold at 0.473s and the lowest sys time is for the highest threshold at 0.037s. 0.473s minus 0.037s = 0.436s / 2 = 0.218s. The avg sys time for the optimal threshold is 0.144s which is less than 0.218s.
+Based on all the results observed, the most optimal threshold for 'parsort' would be 131072 because it balances the parallelism 
+and overhead. At the threshold of 131072, the average real and user time are at their lowest values before the plateau occurs. 
+It also has an excellent average sys time since it is less than half our range. The highest sys time is for the lowest 
+threshold at 0.473s, and the lowest is for the highest threshold at 0.037s. 0.473s minus 0.037s = 0.436s / 2 = 0.218s. 
+The average sys time for the optimal threshold is 0.144s, less than 0.218s.
 
 
 
