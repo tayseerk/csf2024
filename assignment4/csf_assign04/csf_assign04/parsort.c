@@ -69,11 +69,6 @@ int main( int argc, char **argv ) {
       exit(1);
   }
 
-  if (close( fd ) == -1) {
-    fprintf(stderr, "couldn't close file\n");
-    exit(1);
-  }
-
   // *arr now behaves like a standard array of int64_t.
   // Be careful though! Going off the end of the array will
   // silently extend the file, which can rapidly lead to
