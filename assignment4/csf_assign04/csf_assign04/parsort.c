@@ -13,8 +13,6 @@ void swap( int64_t *arr, unsigned long i, unsigned long j );
 unsigned long partition( int64_t *arr, unsigned long start, unsigned long end );
 int quicksort( int64_t *arr, unsigned long start, unsigned long end, unsigned long par_threshold );
 
-// TODO: declare additional helper functions if needed
-
 typedef struct {
     pid_t pid;
     int status; 
@@ -35,8 +33,6 @@ int main( int argc, char **argv ) {
   const char *filename = argv[1];
 
   // open the named file
-  // TODO: open the named file
-
   int fd = open(filename, O_RDWR); // open returns -1 if file couldn't be opened
   if (fd < 0){
     fprintf(stderr, "File couldn't be opened\n");
@@ -83,8 +79,6 @@ int main( int argc, char **argv ) {
   }
 
   // Unmap the file data
-  // TODO: unmap the file data
-
   munmap( arr, file_size);
   if (munmap( arr, file_size ) == -1) {
     fprintf(stderr, "unmapping the file failed\n");
@@ -236,11 +230,9 @@ int quicksort( int64_t *arr, unsigned long start, unsigned long end, unsigned lo
 
   return left_success && right_success;
 }
-// TODO: modify this code so that the recursive calls execute in child processes
-// TODO: define additional helper functions if needed
 
 Child quicksort_subproc( int64_t *arr, unsigned long start, unsigned long end, unsigned long par_threshold ) {
-  Child this_child = {.pid = -1, .status = 0, .success = 0}; // double check
+  Child this_child = {.pid = -1, .status = 0, .success = 0}; // initialize with vals so err doesn't occur
   pid_t child_pid = fork();
   if ( child_pid == 0 ) {
     // executing in the child
