@@ -68,8 +68,6 @@ public:
   bool valid_num_args(unsigned int expected_num_args) const;
   bool validity(const unsigned cmd_len, const unsigned arg_len, bool arg_valid) const;
   bool identifier_is_valid(std::string arg) const;
-  bool char_is_letter(char character) const;
-  bool char_is_digit(char character) const;
   bool both_identifiers_are_valid(std::string arg1, std::string arg2) const;
   bool value_is_valid(std::string arg) const;
   bool quoted_text_is_valid(std::string arg) const;

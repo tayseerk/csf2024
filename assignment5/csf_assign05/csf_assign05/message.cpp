@@ -81,16 +81,7 @@ void Message::push_arg( const std::string &arg )
 
 bool Message::is_valid() const
 {
-  // TODO: implement
-  //check length - all
-  //check num args 
-
-  //if identifier, check if it is a valid identifier
-  //if value, no white space
-  //if quoted text, quotation marks before and after and non in the middle
-
   if (m_message_type == MessageType::LOGIN){
-    
     return valid_num_args(1) && validity(5, get_username().size(), identifier_is_valid(get_username()));
   } else if (m_message_type == MessageType::CREATE){
     return valid_num_args(1) && validity(6, get_table().size(), identifier_is_valid(get_table()));
@@ -110,56 +101,27 @@ bool Message::is_valid() const
 
 bool Message::valid_num_args(unsigned int expected_num_args) const
 {
-  if (get_num_args() != expected_num_args){
-    return false;
-  } else {
-    return true;
-  }
+  return get_num_args() == expected_num_args;
 }
 
 bool Message::validity(const unsigned cmd_len, const unsigned arg_len, bool arg_valid) const
 {
-  if (cmd_len + arg_len + 1 > MAX_ENCODED_LEN){
-    return false;
-  }
-  if (!arg_valid){
-    return false;
-  }
-
-  return true;
+  return !(cmd_len + arg_len + 1 > MAX_ENCODED_LEN) && arg_valid;
 }
 
 bool Message::identifier_is_valid(std::string arg) const
 {
   // first char is A-Z or a-z
-  if (!char_is_letter(arg[0])){
+  if (!std::isalpha(arg[0])){
     return false;
   }
   for (long unsigned int i = 1; i<arg.size(); i++){
-    if (!(char_is_letter(arg[i]) || arg[i]== 95 || arg[i]==32|| char_is_digit(arg[i]))){
+    if (!(std::isalpha(arg[i]) || arg[i]== '_' || arg[i]==' ' || isdigit(arg[i]))){
       return false;
     }
   } 
   
   return true;
-}
-
-bool Message::char_is_letter(char character) const
-{
-  if ((character >= 64 && character <= 90) || (character >= 97 && character <= 122)){
-    return true;
-  } else {
-    return false;
-  }
-}
-
-bool Message::char_is_digit(char character) const
-{
-  if (character >= 48 && character <= 57){
-    return true;
-  } else {
-    return false;
-  }
 }
 
 bool Message::both_identifiers_are_valid(std::string arg1, std::string arg2) const
@@ -169,28 +131,15 @@ bool Message::both_identifiers_are_valid(std::string arg1, std::string arg2) con
 
 bool Message::value_is_valid(std::string arg) const
 {
-  for (long unsigned int i = 0; i<arg.size(); i++){
-    if(arg[i] == 32){
-      return false;
-    }
-  }
-
-  return true;
+  return arg.find(' ') == std::string::npos;
 }
 
 bool Message::quoted_text_is_valid(std::string arg) const
 {
-  // if (arg[0] != 34){
-  //   return false;
-  // }
   for (long unsigned int i = 1; i<arg.size()-1; i++){
     if(arg[i] == 34){
       return false;
     }
   }
-  // if (arg[arg.size()-1] != 34){
-  //   return false;
-  // }
-
   return true;
 }
