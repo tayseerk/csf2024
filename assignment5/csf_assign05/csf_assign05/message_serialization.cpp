@@ -51,26 +51,21 @@ void MessageSerialization::decode( const std::string &encoded_msg_, Message &msg
 
   unsigned index = 0;
   std::string msg_type_str = extract_string(encoded_msg_, index);
-  // std::string args_str = extract_string(encoded_msg_, index);
-
+  remove_null_char(msg_type_str);
   msg.set_message_type(string_to_message[msg_type_str]);
 
   while (index < encoded_msg_.length()){
     std::string arg_str = extract_string(encoded_msg_, index);
-    if(arg_str == "\n"){
+    if(arg_str.empty() || arg_str == "\n"){
       break;
     }
-    size_t null_pos = arg_str.find('\n');
-    if(null_pos!= std::string::npos){
-      arg_str.erase(null_pos);
-    }
+    remove_null_char(arg_str);
     msg.push_arg(arg_str);
   }
 
-  // std::tuple<std::string, std::string> spliced_command = splice_string(encoded_msg_);
-
-  //check for quotes beginning and end
-
+  if(!msg.is_valid()){
+    throw InvalidMessage("Resulting message is invalid.");
+  }
 }
 
  void MessageSerialization::check_exceptions(const std::string &encoded_msg_, Message &msg)
@@ -88,15 +83,6 @@ void MessageSerialization::decode( const std::string &encoded_msg_, Message &msg
  std::string MessageSerialization::extract_string(const std::string &encoded_msg_, unsigned &index)
  {
 
-
-  // while(encoded_msg_[index] == ' '){
-  //   index++;
-  // }
-
-  // unsigned start = index;
-  // while(encoded_msg_[index] != ' '){
-  //   index++;
-  // }
   unsigned start = index;
 
   while(encoded_msg_[start] == ' '){
@@ -104,68 +90,27 @@ void MessageSerialization::decode( const std::string &encoded_msg_, Message &msg
   }
 
   unsigned end = start;
-  while(encoded_msg_[end] != ' ' && end < encoded_msg_.length()){
+  if(encoded_msg_[start] == '\"'){
+    start++;
     end++;
+    while(encoded_msg_[end] != '\"' && end < encoded_msg_.length()){
+      end++;
+    }
+  } else {
+    while(encoded_msg_[end] != ' ' && end < encoded_msg_.length()){
+      end++;
+    }
   }
 
-  index = end;
+  index = end + 1;
 
   return encoded_msg_.substr(start, end - start);
-  // return encoded_msg_.substr(start, index - start);
  }
 
-//  std::tuple<std::string, std::string> MessageSerialization::splice_string(const std::string &encoded_msg_)
-//  {
-//   std::tuple<std::string, std::string> spliced;
-//   long unsigned int itr; //keep track of end of string
-//   std::string message_type_str = find_string(encoded_msg_, itr);
-//   std::string args = find_args(encoded_msg_.substr(itr, encoded_msg_.length() - itr), itr);
-  
-//   size_t null_pos = args.find('\n');
-//   if(null_pos!= std::string::npos){
-//     args.erase(null_pos);
-//   }
-  
-//   spliced = make_tuple(message_type_str, args);
-
-//   return spliced;
-//  }
-
-//  std::string MessageSerialization::find_string(const std::string &encoded_msg_, long unsigned int &itr)
-//  {
-//   long unsigned int start_index = 0; // for message type word
-//   while(encoded_msg_[start_index] == ' '){
-//     start_index++;
-//   }
-
-//   long unsigned int end_index = start_index; // for message type word
-//   while(encoded_msg_[end_index] != ' ' && end_index < encoded_msg_.length()){
-//     end_index++;
-//   }
-
-//   itr = end_index;
-
-//   return encoded_msg_.substr(start_index, end_index - start_index);
-//  }
-
-//  std::string MessageSerialization::find_args(std::string &sub_string, long unsigned int &itr )
-//  {
-//   std::string args;
-//   // if (sub_string.length()==1){
-//   //   args+=sub_string;
-//   // } else {
-//   //   args += find_string(sub_string, itr);
-//   //   find_args(sub_string.substr(args.length(), sub_string.length()), itr);
-//   // }
-//   // return args;
-//   while (itr < sub_string.length() && sub_string[itr] != '\n') {
-//     if (!args.empty()) {
-//       args += " "; 
-//     }
-//     args += find_string(sub_string, itr); 
-//     std::string new_string = sub_string.substr(itr, sub_string.length() - itr);
-//     sub_string.erase();
-//     sub_string += new_string;
-//   }
-//   return args;
-//  }
+ void MessageSerialization::remove_null_char(std::string &string)
+ {
+    size_t null_pos = string.find('\n');
+    if(null_pos!= std::string::npos){
+      string.erase(null_pos);
+    }
+ }
