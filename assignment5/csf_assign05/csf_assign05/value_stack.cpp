@@ -12,32 +12,30 @@ ValueStack::~ValueStack()
 
 bool ValueStack::is_empty() const
 {
-  // TODO: implement
   return stack.empty();
 }
 
 void ValueStack::push( const std::string &value )
 {
-  // TODO: implement
-  stack.push_back(value);
+  stack.push_back(value); // push to top of stack (end of vector)
 }
 
 std::string ValueStack::get_top() const
 {
-  // TODO: implement
+  // throw exception if empty
   if(stack.empty()){
     throw OperationException("Stack is empty.");
   }
 
-  return stack.back();
+  return stack.back(); // top of stack = back of vector
 }
 
 void ValueStack::pop()
 {
-  // TODO: implement
+  // throw exception if empty
   if(stack.empty()){
     throw OperationException("Stack is empty.");
   }
 
-  stack.pop_back();
+  stack.pop_back(); // pop off top of stack (end of vector)
 }

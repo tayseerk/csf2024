@@ -7,7 +7,7 @@
 class ValueStack {
 private:
   // TODO: member variable(s)
-  std::vector<std::string> stack;
+  std::vector<std::string> stack; // represents stack (back of vector = top)
 
 public:
   ValueStack();

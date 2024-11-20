@@ -11,9 +11,9 @@ private:
   std::string m_name;
   // TODO: add member variables
   pthread_mutex_t mutex;
-  std::map<std::string, std::string> table;
-  std::map<std::string, std::string> save_original; 
-  std::vector<std::string> added_keys;
+  std::map<std::string, std::string> table; // actual table (with tentative changes)
+  std::map<std::string, std::string> save_original; // saves original when changed
+  std::vector<std::string> added_keys; // marks which keys were added
   // copy constructor and assignment operator are prohibited
   Table( const Table & );
   Table &operator=( const Table & );

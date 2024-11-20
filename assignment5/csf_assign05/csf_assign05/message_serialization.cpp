@@ -45,22 +45,24 @@ void MessageSerialization::decode( const std::string &encoded_msg_, Message &msg
     {"DATA", MessageType::DATA}
   };
 
-  msg = Message();
+  msg = Message(); // clear message
 
   check_exceptions(encoded_msg_, msg);
 
-  unsigned index = 0;
+  // get message type
+  unsigned index = 0; // keeps track of current index in string
   std::string msg_type_str = extract_string(encoded_msg_, index);
   remove_null_char(msg_type_str);
   msg.set_message_type(string_to_message[msg_type_str]);
 
+  // get arguments
   while (index < encoded_msg_.length()){
     std::string arg_str = extract_string(encoded_msg_, index);
-    if(arg_str.empty() || arg_str == "\n"){
+    if(arg_str.empty() || arg_str == "\n"){ // no arguments left
       break;
     }
     remove_null_char(arg_str);
-    msg.push_arg(arg_str);
+    msg.push_arg(arg_str); 
   }
 
   if(!msg.is_valid()){
@@ -83,32 +85,32 @@ void MessageSerialization::decode( const std::string &encoded_msg_, Message &msg
  std::string MessageSerialization::extract_string(const std::string &encoded_msg_, unsigned &index)
  {
 
-  unsigned start = index;
-
+  unsigned start = index; // start at current index
+  // doesn't start until after whitespaces
   while(encoded_msg_[start] == ' '){
     start++;
   }
 
   unsigned end = start;
-  if(encoded_msg_[start] == '\"'){
-    start++;
+  if(encoded_msg_[start] == '\"'){ // if string starts with a quotation mark
+    start++; // skip quotation mark
     end++;
-    while(encoded_msg_[end] != '\"' && end < encoded_msg_.length()){
+    while(encoded_msg_[end] != '\"' && end < encoded_msg_.length()){ // end at next quotation mark
       end++;
     }
-  } else {
+  } else { // not a quoted text
     while(encoded_msg_[end] != ' ' && end < encoded_msg_.length()){
       end++;
-    }
+    } // end at next whitespace or at the end of the string
   }
 
-  index = end + 1;
+  index = end + 1; // up date current index
 
-  return encoded_msg_.substr(start, end - start);
+  return encoded_msg_.substr(start, end - start); // extract string
  }
 
  void MessageSerialization::remove_null_char(std::string &string)
- {
+ {  // find position of null character and erase it
     size_t null_pos = string.find('\n');
     if(null_pos!= std::string::npos){
       string.erase(null_pos);
