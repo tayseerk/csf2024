@@ -3,13 +3,17 @@
 
 #include <map>
 #include <string>
+#include <vector>
 #include <pthread.h>
 
 class Table {
 private:
   std::string m_name;
   // TODO: add member variables
-
+  pthread_mutex_t mutex;
+  std::map<std::string, std::string> table;
+  std::map<std::string, std::string> save_original; 
+  std::vector<std::string> added_keys;
   // copy constructor and assignment operator are prohibited
   Table( const Table & );
   Table &operator=( const Table & );

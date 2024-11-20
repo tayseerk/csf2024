@@ -13,19 +13,31 @@ ValueStack::~ValueStack()
 bool ValueStack::is_empty() const
 {
   // TODO: implement
+  return stack.empty();
 }
 
 void ValueStack::push( const std::string &value )
 {
   // TODO: implement
+  stack.push_back(value);
 }
 
 std::string ValueStack::get_top() const
 {
   // TODO: implement
+  if(stack.empty()){
+    throw OperationException("Stack is empty.");
+  }
+
+  return stack.back();
 }
 
 void ValueStack::pop()
 {
   // TODO: implement
+  if(stack.empty()){
+    throw OperationException("Stack is empty.");
+  }
+
+  stack.pop_back();
 }
