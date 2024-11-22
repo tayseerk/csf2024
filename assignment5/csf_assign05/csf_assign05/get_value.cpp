@@ -18,134 +18,112 @@ int main(int argc, char **argv)
   std::string table = argv[4];
   std::string key = argv[5];
 
-  // TODO: implement
-    int clientfd;
+  int clientfd;
   rio_t rio;
 
   clientfd = open_clientfd(hostname.c_str(), port.c_str());
   if (clientfd < 0) {
-    std::cerr << "Error: Unable to connect to server\n";
+    std::cerr << "Error: cannot establish connection to server\n";
     return 1;
   }
 
   rio_readinitb(&rio, clientfd);
 
+  // send message for LOGIN 
   try {
-    // Send LOGIN message
     Message login_msg(MessageType::LOGIN, {username});
-    std::string encoded_msg;
-    MessageSerialization::encode(login_msg, encoded_msg);
-    rio_writen(clientfd, encoded_msg.c_str(),
-               encoded_msg.length());
+    std::string encoded_message;
+    MessageSerialization::encode(login_msg, encoded_message);
+    rio_writen(clientfd, encoded_message.c_str(), encoded_message.length());
 
-    // Read response
+    // read response
     char buf[Message::MAX_ENCODED_LEN];
-    ssize_t n = rio_readlineb(&rio, buf,
-                              Message::MAX_ENCODED_LEN);
-    if (n <= 0) {
-      std::cerr << "Error: Failed to read from server\n";
+    ssize_t length = rio_readlineb(&rio, buf, Message::MAX_ENCODED_LEN);
+    if (length <= 0) {
+      std::cerr << "Error: could not read response from server\n";
       Close(clientfd);
       return 1;
     }
 
     Message response;
-    MessageSerialization::decode(std::string(buf, n),
-                                 response);
+    MessageSerialization::decode(std::string(buf, length),response);
 
-    if (response.get_message_type() == MessageType::ERROR ||
-        response.get_message_type() == MessageType::FAILED) {
-      std::cerr << "Error: " << response.get_quoted_text()
-                << "\n";
+    if (response.get_message_type() == MessageType::ERROR || response.get_message_type() == MessageType::FAILED) {
+      std::cerr << "Error: " << response.get_quoted_text() << "\n";
       Close(clientfd);
       return 1;
-    } else if (response.get_message_type()
-               != MessageType::OK) {
-      std::cerr << "Error: Unexpected response from server\n";
+    } else if (response.get_message_type() != MessageType::OK) {
+      std::cerr << "Error: bad server response\n";
       Close(clientfd);
       return 1;
     }
 
-    // Send GET message
+    // send message for GET
     Message get_msg(MessageType::GET, {table, key});
-    MessageSerialization::encode(get_msg, encoded_msg);
-    rio_writen(clientfd, encoded_msg.c_str(),
-               encoded_msg.length());
+    MessageSerialization::encode(get_msg, encoded_message);
+    rio_writen(clientfd, encoded_message.c_str(), encoded_message.length());
 
-    // Read response
-    n = rio_readlineb(&rio, buf, Message::MAX_ENCODED_LEN);
-    if (n <= 0) {
-      std::cerr << "Error: Failed to read from server\n";
+    // read
+    length = rio_readlineb(&rio, buf, Message::MAX_ENCODED_LEN);
+    if (length <= 0) {
+      std::cerr << "Error: could not read from server\n";
       Close(clientfd);
       return 1;
     }
 
-    MessageSerialization::decode(std::string(buf, n),
-                                 response);
-
-    if (response.get_message_type() == MessageType::ERROR ||
-        response.get_message_type() == MessageType::FAILED) {
-      std::cerr << "Error: " << response.get_quoted_text()
-                << "\n";
+    MessageSerialization::decode(std::string(buf, length), response);
+    if (response.get_message_type() == MessageType::ERROR || response.get_message_type() == MessageType::FAILED) {
+      std::cerr << "Error: " << response.get_quoted_text() << "\n";
       Close(clientfd);
       return 1;
-    } else if (response.get_message_type()
-               != MessageType::OK) {
-      std::cerr << "Error: Unexpected response from server\n";
+    } else if (response.get_message_type() != MessageType::OK) {
+      std::cerr << "Error: bad server response\n";
       Close(clientfd);
       return 1;
     }
 
-    // Send TOP message
+    // send message for TOP
     Message top_msg(MessageType::TOP);
-    MessageSerialization::encode(top_msg, encoded_msg);
-    rio_writen(clientfd, encoded_msg.c_str(),
-               encoded_msg.length());
+    MessageSerialization::encode(top_msg, encoded_message);
+    rio_writen(clientfd, encoded_message.c_str(), encoded_message.length());
 
-    // Read response
-    n = rio_readlineb(&rio, buf, Message::MAX_ENCODED_LEN);
-    if (n <= 0) {
-      std::cerr << "Error: Failed to read from server\n";
+    // read from server
+    length = rio_readlineb(&rio, buf, Message::MAX_ENCODED_LEN);
+    if (length  <= 0) {
+      std::cerr << "Error: could not read from server\n";
       Close(clientfd);
       return 1;
     }
 
-    MessageSerialization::decode(std::string(buf, n),
-                                 response);
-
-    if (response.get_message_type() == MessageType::ERROR ||
-        response.get_message_type() == MessageType::FAILED) {
-      std::cerr << "Error: " << response.get_quoted_text()
-                << "\n";
+    MessageSerialization::decode(std::string(buf, length), response);
+    if (response.get_message_type() == MessageType::ERROR || response.get_message_type() == MessageType::FAILED) {
+      std::cerr << "Error: " << response.get_quoted_text() << "\n";
       Close(clientfd);
       return 1;
-    } else if (response.get_message_type()
-               == MessageType::DATA) {
+    } else if (response.get_message_type() == MessageType::DATA) {
       std::cout << response.get_value() << "\n";
     } else {
-      std::cerr << "Error: Unexpected response from server\n";
+      std::cerr << "Error: bad server response\n";
       Close(clientfd);
       return 1;
     }
 
-    // Send BYE message
+    // send message for BYE 
     Message bye_msg(MessageType::BYE);
-    MessageSerialization::encode(bye_msg, encoded_msg);
-    rio_writen(clientfd, encoded_msg.c_str(),
-               encoded_msg.length());
+    MessageSerialization::encode(bye_msg, encoded_message);
+    rio_writen(clientfd, encoded_message.c_str(), encoded_message.length());
 
-    // Read response
-    n = rio_readlineb(&rio, buf, Message::MAX_ENCODED_LEN);
-    if (n <= 0) {
-      std::cerr << "Error: Failed to read from server\n";
+    // read from server 
+    length = rio_readlineb(&rio, buf, Message::MAX_ENCODED_LEN);
+    if (length <= 0) {
+      std::cerr << "Error: could not read from the server\n";
       Close(clientfd);
       return 1;
     }
 
-    MessageSerialization::decode(std::string(buf, n),
-                                 response);
-
+    MessageSerialization::decode(std::string(buf, length), response);
     if (response.get_message_type() != MessageType::OK) {
-      std::cerr << "Error: Unexpected response from server\n";
+      std::cerr << "Error: bad server response\n";
       Close(clientfd);
       return 1;
     }
@@ -158,7 +136,7 @@ int main(int argc, char **argv)
     Close(clientfd);
     return 1;
   } catch (...) {
-    std::cerr << "Error: An unexpected error occurred\n";
+    std::cerr << "Error: unexpected error\n";
     Close(clientfd);
     return 1;
   }
