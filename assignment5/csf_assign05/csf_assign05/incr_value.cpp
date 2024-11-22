@@ -99,8 +99,8 @@ int main(int argc, char **argv) {
 
     // send message for GET
     Message get_msg(MessageType::GET, {table, key});
-    MessageSerialization::encode(get_msg, encoded_msg);
-    rio_writen(clientfd, encoded_msg.c_str(), encoded_msg.length());
+    MessageSerialization::encode(get_msg, encoded_message);
+    rio_writen(clientfd, encoded_message.c_str(), encoded_message.length());
 
     // read the response from the server 
     length = rio_readlineb(&rio, buf, Message::MAX_ENCODED_LEN);
@@ -155,9 +155,8 @@ int main(int argc, char **argv) {
 
     // send the message for ADD 
     Message add_msg(MessageType::ADD);
-    MessageSerialization::encode(add_msg, encoded_msg);
-    rio_writen(clientfd, encoded_msg.c_str(),
-               encoded_msg.length());
+    MessageSerialization::encode(add_msg, encoded_message);
+    rio_writen(clientfd, encoded_message.c_str(), encoded_message.length());
 
     // read the response from server 
     length = rio_readlineb(&rio, buf, Message::MAX_ENCODED_LEN);
@@ -188,14 +187,14 @@ int main(int argc, char **argv) {
     rio_writen(clientfd, encoded_message.c_str(), encoded_message.length());
 
     // Read response
-    n = rio_readlineb(&rio, buf, Message::MAX_ENCODED_LEN);
-    if (n <= 0) {
+    length = rio_readlineb(&rio, buf, Message::MAX_ENCODED_LEN);
+    if (length <= 0) {
       std::cerr << "Error: Failed to read from server\n";
       Close(clientfd);
       return 1;
     }
 
-    MessageSerialization::decode(std::string(buf, n), response);
+    MessageSerialization::decode(std::string(buf, length), response);
     if (response.get_message_type() == MessageType::ERROR || response.get_message_type() == MessageType::FAILED) {
       std::cerr << "Error: " << response.get_quoted_text() << "\n";
       Close(clientfd);
