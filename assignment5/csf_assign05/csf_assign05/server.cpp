@@ -13,7 +13,6 @@ Server::Server()
 {
   // TODO: implement
   pthread_mutex_init(&mutex, NULL);
-  create_socket();
 }
 
 Server::~Server()
@@ -54,12 +53,15 @@ void Server::server_loop()
 
   // Note that your code to start a worker thread for a newly-connected
   // client might look something like this:
-/*
-  ClientConnection *client = new ClientConnection( this, client_fd );
-  pthread_t thr_id;
-  if ( pthread_create( &thr_id, nullptr, client_worker, client ) != 0 )
-    log_error( "Could not create client thread" );
-*/
+  while(true){
+    int client_fd = accept_connection();
+    if(client_fd >= 0){
+      ClientConnection *client = new ClientConnection( this, client_fd );
+      pthread_t thr_id;
+      if ( pthread_create( &thr_id, nullptr, client_worker, client ) != 0 )
+        log_error( "Could not create client thread" );
+    }
+  }
 }
 
 
@@ -85,9 +87,15 @@ void Server::log_error( const std::string &what )
 
 // TODO: implement member functions
 
-void Server::create_socket() 
+int Server::accept_connection() 
 {
- 
+  struct sockaddr_in  client_addr;
+  socklen_t client_len = sizeof(client_addr);
+  int client_fd = accept(socket_fd, (struct sockaddr *) &client_addr, &client_len);
+  if (client_fd < 0) 
+    fatal("accept failed");
+  return client_fd;
+
 }
 
 void Server::create_table( const std::string &name )
@@ -106,8 +114,8 @@ Table* Server::find_table( const std::string &name )
   return nullptr;
 }
 
-void Server::fatal (std::string message)
+void Server::fatal (std::string err_message)
 {
-  std::cerr << "Error: " << message << "\n";
+  log_error(err_message);
   std::exit(EXIT_FAILURE);
 }

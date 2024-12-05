@@ -30,10 +30,10 @@ public:
   void log_error( const std::string &what );
 
   // TODO: add member functions
-  void create_socket(); 
+  int accept_connection(); 
   void create_table( const std::string &name ); // suggested function
   Table *find_table( const std::string &name ); // suggested function
-  void fatal (std::string message);
+  void fatal (std::string err_message);
   //void log_error( const std::string &what );
 
 };
