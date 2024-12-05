@@ -10,7 +10,10 @@
 class Server {
 private:
   // TODO: add member variables
-
+  pthread_mutex_t mutex; // mutex for server
+  int mode; //0 = autocommit, 1 = transaction
+  int socket_fd;
+  std::map<std::string, Table*> tables; // map of tables (key is table name, value is table object)
   // copy constructor and assignment operator are prohibited
   Server( const Server & );
   Server &operator=( const Server & );
@@ -27,13 +30,12 @@ public:
   void log_error( const std::string &what );
 
   // TODO: add member functions
+  void create_socket(); 
+  void create_table( const std::string &name ); // suggested function
+  Table *find_table( const std::string &name ); // suggested function
+  void fatal (std::string message);
+  //void log_error( const std::string &what );
 
-  // Some suggested member functions:
-/*
-  void create_table( const std::string &name );
-  Table *find_table( const std::string &name );
-  void log_error( const std::string &what );
-*/
 };
 
 

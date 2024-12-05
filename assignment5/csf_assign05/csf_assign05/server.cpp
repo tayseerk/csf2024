@@ -6,20 +6,46 @@
 #include "guard.h"
 #include "server.h"
 
+
 Server::Server()
+  : mode( 0 ) // autocommit is default mode
   // TODO: initialize member variables
 {
   // TODO: implement
+  pthread_mutex_init(&mutex, NULL);
+  create_socket();
 }
 
 Server::~Server()
 {
   // TODO: implement
+  Close(socket_fd);
+  pthread_mutex_destroy(&mutex);
 }
 
 void Server::listen( const std::string &port )
 {
   // TODO: implement
+  struct sockaddr_in serveraddr = {0};
+  int socket_fd = socket(AF_INET, SOCK_STREAM, 0);
+  if (socket_fd < 0) 
+  {
+    fatal("socket failed");
+  }
+
+  serveraddr.sin_family = AF_INET;
+  serveraddr.sin_addr.s_addr = htonl(INADDR_ANY);
+  serveraddr.sin_port = htons(static_cast<unsigned short>(std::stoi(port)));
+
+  if (bind(socket_fd, (struct sockaddr *) &serveraddr, sizeof(serveraddr)) < 0) 
+  {  
+    fatal("bind failed");
+  }
+  if (::listen(socket_fd, 5) < 0)
+  {
+    fatal("listen failed");
+  } 
+
 }
 
 void Server::server_loop()
@@ -49,6 +75,7 @@ void *Server::client_worker( void *arg )
   client->chat_with_client();
   return nullptr;
 */
+return nullptr;
 }
 
 void Server::log_error( const std::string &what )
@@ -57,3 +84,30 @@ void Server::log_error( const std::string &what )
 }
 
 // TODO: implement member functions
+
+void Server::create_socket() 
+{
+ 
+}
+
+void Server::create_table( const std::string &name )
+{
+  Table *table = new Table(name);
+  tables.emplace(name, table);
+}
+
+Table* Server::find_table( const std::string &name )
+{
+  if (tables.find(name)!= tables.end())
+  {
+    return tables[name];
+  }
+
+  return nullptr;
+}
+
+void Server::fatal (std::string message)
+{
+  std::cerr << "Error: " << message << "\n";
+  std::exit(EXIT_FAILURE);
+}

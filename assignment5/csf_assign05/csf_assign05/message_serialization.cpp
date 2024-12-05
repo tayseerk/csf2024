@@ -104,7 +104,7 @@ void MessageSerialization::decode( const std::string &encoded_msg_, Message &msg
     } // end at next whitespace or at the end of the string
   }
 
-  index = end + 1; // up date current index
+  index = end + 1; // update current index
 
   return encoded_msg_.substr(start, end - start); // extract string
  }

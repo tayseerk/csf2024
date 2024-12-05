@@ -25,6 +25,7 @@ public:
   void chat_with_client();
 
   // TODO: additional member functions
+  Message process_handling(Message msg);
 };
 
 #endif // CLIENT_CONNECTION_H
