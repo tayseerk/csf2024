@@ -14,6 +14,7 @@ private:
   int mode; //0 = autocommit, 1 = transaction
   int socket_fd;
   std::map<std::string, Table*> tables; // map of tables (key is table name, value is table object)
+  bool is_logged_in;
   // copy constructor and assignment operator are prohibited
   Server( const Server & );
   Server &operator=( const Server & );
@@ -30,10 +31,14 @@ public:
   void log_error( const std::string &what );
 
   // TODO: add member functions
+  bool is_autocommit();
+  void change_mode();
   int accept_connection(); 
   void create_table( const std::string &name ); // suggested function
   Table *find_table( const std::string &name ); // suggested function
   void fatal (std::string err_message);
+  void log_in();
+  bool get_is_logged_in();
   //void log_error( const std::string &what );
 
 };

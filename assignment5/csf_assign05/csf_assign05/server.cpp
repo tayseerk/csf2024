@@ -9,6 +9,7 @@
 
 Server::Server()
   : mode( 0 ) // autocommit is default mode
+  , is_logged_in (false)
   // TODO: initialize member variables
 {
   // TODO: implement
@@ -58,8 +59,12 @@ void Server::server_loop()
     if(client_fd >= 0){
       ClientConnection *client = new ClientConnection( this, client_fd );
       pthread_t thr_id;
-      if ( pthread_create( &thr_id, nullptr, client_worker, client ) != 0 )
+      if ( pthread_create( &thr_id, nullptr, client_worker, client ) != 0 ){
         log_error( "Could not create client thread" );
+        delete client;
+        continue;
+      } 
+      pthread_detach( pthread_self() );
     }
   }
 }
@@ -72,12 +77,11 @@ void *Server::client_worker( void *arg )
   // Assuming that your ClientConnection class has a member function
   // called chat_with_client(), your implementation might look something
   // like this:
-/*
+
   std::unique_ptr<ClientConnection> client( static_cast<ClientConnection *>( arg ) );
   client->chat_with_client();
   return nullptr;
-*/
-return nullptr;
+
 }
 
 void Server::log_error( const std::string &what )
@@ -86,6 +90,20 @@ void Server::log_error( const std::string &what )
 }
 
 // TODO: implement member functions
+
+bool Server::is_autocommit()
+{
+  return mode == 0;
+}
+
+void Server::change_mode()
+{
+  if(mode == 0){
+    mode = 1;
+  } else {
+    mode = 0;
+  }
+}
 
 int Server::accept_connection() 
 {
@@ -118,4 +136,14 @@ void Server::fatal (std::string err_message)
 {
   log_error(err_message);
   std::exit(EXIT_FAILURE);
+}
+
+void Server::log_in()
+{
+  is_logged_in = true;
+}
+
+bool Server::get_is_logged_in()
+{
+  return is_logged_in;
 }
