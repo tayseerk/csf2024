@@ -33,11 +33,12 @@ public:
   // TODO: add member functions
   bool is_autocommit();
   void change_mode();
-  int accept_connection(); 
+  int accept_connection(int socket_fd, struct sockaddr_in *clientaddr); 
   void create_table( const std::string &name ); // suggested function
   Table *find_table( const std::string &name ); // suggested function
   void fatal (std::string err_message);
   void log_in();
+  void log_out();
   bool get_is_logged_in();
   //void log_error( const std::string &what );
 

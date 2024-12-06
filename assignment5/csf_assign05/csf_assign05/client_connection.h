@@ -41,11 +41,11 @@ public:
   Message commit();
   Message bye();
   Message reply_ok();
-  Message reply_data(std::initializer_list<std::string> value);
+  Message reply_data(std::string value);
   void autocommit_lock(Table* table_ptr);
   void autocommit_unlock(Table* table_ptr);
   Table* get_server_table(std::string table_name);
-  bool string_is_digit(const std::string& str);
+  bool string_is_digit(std::string& str);
   std::string do_arithmetic(MessageType type, unsigned left, unsigned right);
   void handle_error(const std::string error_msg, MessageType error_type);
   Message reply_error(const std::string error_msg);
