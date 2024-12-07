@@ -12,7 +12,8 @@ ClientConnection::ClientConnection( Server *server, int client_fd )
   : m_server( server )
   , m_client_fd( client_fd )
   , login_status(false)
-  , trans_status(false) // newly added for transcation 
+  //, trans_status(false) // newly added for transcation 
+  , mode_status(0)
 {
   rio_readinitb( &m_fdbuf, m_client_fd );
   m_stack = new ValueStack();
@@ -254,10 +255,10 @@ Message ClientConnection::begin()
 }*/
 Message ClientConnection::begin()
 {
-  if (trans_status) {
+  if (mode_status == 1) {
     throw OperationException("\"Cannot begin a transaction while already in one.\"");
   }
-  trans_status = true;
+  mode_status = 1;
   return reply_ok();
 }
 
@@ -280,7 +281,7 @@ Message ClientConnection::commit()
 
 Message ClientConnection::commit()
 {
-  if (!trans_status) {
+  if (mode_status == 0) {
     throw OperationException("\"no transaction has started\"");
   }
   // we want to commit for all locked tables 
@@ -290,7 +291,7 @@ Message ClientConnection::commit()
     t->unlock();
   }
   locked_tables.clear();
-  trans_status = false;
+  mode_status = 0;
   return reply_ok();
 }
 
@@ -313,7 +314,7 @@ Message ClientConnection::reply_data(std::string value)
 void ClientConnection::autocommit_lock(Table* table_ptr)
 {
   if(table_ptr != nullptr){
-    if(m_server->is_autocommit()){ // do only in autocommit mode
+    if(mode_status == 0){ // do only in autocommit mode
       table_ptr->lock();
     }
   } 
@@ -322,7 +323,7 @@ void ClientConnection::autocommit_lock(Table* table_ptr)
 void ClientConnection::autocommit_unlock(Table* table_ptr)
 {
   if(table_ptr != nullptr){
-    if(m_server->is_autocommit()){ //do only in autocommit mode
+    if(mode_status == 0){ //do only in autocommit mode
       table_ptr->unlock();
     }
   }
@@ -371,7 +372,7 @@ std::string ClientConnection::do_arithmetic(MessageType type, unsigned left, uns
 
 void ClientConnection::handle_error(const std::string error_msg, MessageType error_type)
 {
-  if (error_type == MessageType::FAILED && trans_status) {
+  if (error_type == MessageType::FAILED && mode_status == 1) {
     rollback_trans(); // ADDED FOR TRANSACTION
   }
 
@@ -427,11 +428,11 @@ void ClientConnection::rollback_trans() {
     t->unlock();
   }
   locked_tables.clear();
-  trans_status = false;
+  mode_status = 0;
 }
 
 void ClientConnection::lock_table(Table *table) {
-  if (!trans_status) {
+  if (mode_status == 0) {
     table->lock(); // autocommit mode so we just lock
   } else {
     // transaction mode: if it isn't alr locked, trylock
@@ -446,7 +447,7 @@ void ClientConnection::lock_table(Table *table) {
 }
 
 void ClientConnection::unlock_table(Table *table) {
-  if (!trans_status) {
+  if (mode_status == 0) {
     table->unlock(); // unlock if alr in autocommit mode
   }
   // transaction mode won't do nothing here so we should just unlock at commit/rollback
