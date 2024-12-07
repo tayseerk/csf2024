@@ -12,6 +12,7 @@ ClientConnection::ClientConnection( Server *server, int client_fd )
   : m_server( server )
   , m_client_fd( client_fd )
   , login_status(false)
+  , trans_status(false) // newly added for transcation 
 {
   rio_readinitb( &m_fdbuf, m_client_fd );
   m_stack = new ValueStack();
@@ -148,6 +149,7 @@ Message ClientConnection::top()
   return reply_data(value);
 }
 
+/* OLD FUNCTION FOR SET
 Message ClientConnection::set(Message msg)
 {
   std::string table_name = msg.get_table(); 
@@ -163,7 +165,23 @@ Message ClientConnection::set(Message msg)
   autocommit_unlock(table);
   return reply_ok();
 }
+*/
+Message ClientConnection::set(Message msg)
+{
+  Table *table = get_server_table(msg.get_table());
+  lock_table(table);
 
+  check_empty_stack("\"no value to set since stack is empty.\"");
+  std::string val = m_stack->get_top();
+  m_stack->pop();
+  std::string key = msg.get_key();
+  table->set(key, val);
+  unlock_table(table);
+  return reply_ok();
+}
+
+
+/* OLD FUNC FOR GET
 Message ClientConnection::get(Message msg)
 {
   std::string table_name = msg.get_table();
@@ -184,6 +202,23 @@ Message ClientConnection::get(Message msg)
     throw OperationException("\"Key does not exist in this table. Can't get value.\"");
   }
 }
+*/
+Message ClientConnection::get(Message msg)
+{
+  Table *table = get_server_table(msg.get_table());
+  lock_table(table);
+  std::string key = msg.get_key();
+  if (!table->has_key(key)) {
+    unlock_table(table);
+    throw OperationException("\"key doesn't exist in the table.\"");
+  }
+
+  std::string val = table->get(key);
+  m_stack->push(val);
+  unlock_table(table);
+  return reply_ok();
+}
+
 
 Message ClientConnection::handle_arithmetic(MessageType type)
 {
@@ -207,6 +242,7 @@ Message ClientConnection::handle_arithmetic(MessageType type)
   return reply_ok();
 }
 
+/* OLD BEGIN FUNCTION
 Message ClientConnection::begin()
 {
   if (m_server->is_autocommit()){ // curently in autocommit
@@ -215,8 +251,17 @@ Message ClientConnection::begin()
   } else { // in the middle of a transaction
     throw OperationException("\"Cannot begin transaction in the middle of another transaction.\"");
   }
+}*/
+Message ClientConnection::begin()
+{
+  if (trans_status) {
+    throw OperationException("\"Cannot begin a transaction while already in one.\"");
+  }
+  trans_status = true;
+  return reply_ok();
 }
 
+/* OLD COMMIT FOR FUNC
 Message ClientConnection::commit()
 {
   // check if it is in transaction mode
@@ -230,6 +275,22 @@ Message ClientConnection::commit()
   }
   // change mode back to default (autocommit)
   m_server->change_mode();
+  return reply_ok();
+} */
+
+Message ClientConnection::commit()
+{
+  if (!trans_status) {
+    throw OperationException("\"no transaction has started\"");
+  }
+  // we want to commit for all locked tables 
+  for (auto &table_name : locked_tables) {
+    Table *t = get_server_table(table_name);
+    t->commit_changes();
+    t->unlock();
+  }
+  locked_tables.clear();
+  trans_status = false;
   return reply_ok();
 }
 
@@ -310,8 +371,13 @@ std::string ClientConnection::do_arithmetic(MessageType type, unsigned left, uns
 
 void ClientConnection::handle_error(const std::string error_msg, MessageType error_type)
 {
+  if (error_type == MessageType::FAILED && trans_status) {
+    rollback_trans(); // ADDED FOR TRANSACTION
+  }
+
   Message reply_msg;
   if(error_type == MessageType::ERROR){ // unrecoverable
+    login_status = false; // added this to end session since its unrecoverable but this could be wrong so I will double check
     reply_msg = reply_error(error_msg);
   } else { // recoverable
     reply_msg = reply_failed(error_msg);
@@ -351,5 +417,38 @@ void ClientConnection::check_empty_stack(const std::string error_msg)
   if(m_stack->is_empty()){
     throw OperationException(error_msg);
   }
+}
+
+// added for transaction
+void ClientConnection::rollback_trans() {
+  for (auto &tname : locked_tables) {
+    Table *t = get_server_table(tname);
+    t->rollback_changes();
+    t->unlock();
+  }
+  locked_tables.clear();
+  trans_status = false;
+}
+
+void ClientConnection::lock_table(Table *table) {
+  if (!trans_status) {
+    table->lock(); // autocommit mode so we just lock
+  } else {
+    // transaction mode: if it isn't alr locked, trylock
+    std::string table_name = table->get_name();
+    if (locked_tables.find(table_name) == locked_tables.end()) {
+      if (!table->trylock()) {
+        throw FailedTransaction("\"couldn't get a lock on the table\"");
+      }
+      locked_tables.insert(table_name);
+    }
+  }
+}
+
+void ClientConnection::unlock_table(Table *table) {
+  if (!trans_status) {
+    table->unlock(); // unlock if alr in autocommit mode
+  }
+  // transaction mode won't do nothing here so we should just unlock at commit/rollback
 }
 
