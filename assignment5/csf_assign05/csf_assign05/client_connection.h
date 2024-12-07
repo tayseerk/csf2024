@@ -64,6 +64,9 @@ public:
   void check_empty_stack(const std::string error_msg);
 
   void rollback_trans(); // helper function to rollback a transaction 
+  void lock_table(Table *table);
+  void unlock_table(Table *table);
+    
 };
 
 #endif // CLIENT_CONNECTION_H
