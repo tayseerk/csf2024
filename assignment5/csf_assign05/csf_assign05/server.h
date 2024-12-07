@@ -12,7 +12,6 @@ private:
   // TODO: add member variables
   pthread_mutex_t mutex; // mutex for server
   pthread_mutex_t mutex_for_tables; // new mutex to protect the tables map
-  // int mode; //0 = autocommit, 1 = transaction (CURRENTLY GLOBAL)
   int socket_fd;
   std::map<std::string, Table*> tables; // map of tables (key is table name, value is table object)
 
@@ -32,14 +31,10 @@ public:
   void log_error( const std::string &what );
 
   // TODO: add member functions
-  // bool is_autocommit(); // checks mode (CURRENTLY GLOBAL)
-  // void change_mode(); // changes mode (CURRENTLY GLOBAL)
   int accept_connection(int socket_fd, struct sockaddr_in *clientaddr); 
   void create_table( const std::string &name ); // suggested function
   Table *find_table( const std::string &name ); // suggested function
   void fatal (std::string err_message); 
-  // bool get_is_logged_in(); (CURRENTLY GLOBAL)
-
 
 };
 
