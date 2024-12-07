@@ -12,7 +12,6 @@ ClientConnection::ClientConnection( Server *server, int client_fd )
   : m_server( server )
   , m_client_fd( client_fd )
   , login_status(false)
-  //, trans_status(false) // newly added for transcation 
   , mode_status(0)
 {
   rio_readinitb( &m_fdbuf, m_client_fd );
@@ -150,76 +149,41 @@ Message ClientConnection::top()
   return reply_data(value);
 }
 
-/* OLD FUNCTION FOR SET
 Message ClientConnection::set(Message msg)
 {
-  std::string table_name = msg.get_table(); 
-  Table *table = get_server_table(table_name); // acquire table ptr
-  autocommit_lock(table); 
-
-  check_empty_stack("\"Stack is empty, no value to set.\"");
-  std::string value = m_stack->get_top();
-  m_stack->pop(); // take value off of stack
-  std::string key = msg.get_key();
-
-  table->set(key, value); // set value
-  autocommit_unlock(table);
-  return reply_ok();
-}
-*/
-Message ClientConnection::set(Message msg)
-{
-  Table *table = get_server_table(msg.get_table());
+  // retrieve the table and lock it
+  Table *table = get_server_table(msg.get_table()); 
   lock_table(table);
 
+  // make sure the stack is not empty
   check_empty_stack("\"no value to set since stack is empty.\"");
+  // get the top value from the stack and then pop that value
   std::string val = m_stack->get_top();
   m_stack->pop();
   std::string key = msg.get_key();
-  table->set(key, val);
-  unlock_table(table);
+  table->set(key, val); // set the value in the table
+  unlock_table(table); // releases the lock only in autocommit mode (stays locked for trans)
   return reply_ok();
 }
 
-
-/* OLD FUNC FOR GET
 Message ClientConnection::get(Message msg)
 {
-  std::string table_name = msg.get_table();
-  Table *table = get_server_table(table_name); //acquire table ptr
-  autocommit_lock(table);
-
-  std::string key = msg.get_key();
-  std::string value;
-
-  if (table->has_key(key)){ //check key exists in table
-    // get value from key
-    value = table->get(key);
-    m_stack->push(value);
-    autocommit_unlock(table);
-    return reply_ok();
-  } else { // key does not exist in table
-    autocommit_unlock(table);
-    throw OperationException("\"Key does not exist in this table. Can't get value.\"");
-  }
-}
-*/
-Message ClientConnection::get(Message msg)
-{
+  // retrieve the table and lock it 
   Table *table = get_server_table(msg.get_table());
   lock_table(table);
-  std::string key = msg.get_key();
+  std::string key = msg.get_key(); // get the key
+  // if the key doesn't exist, throw an error
   if (!table->has_key(key)) {
-    unlock_table(table);
+    unlock_table(table); // only unlock for autocommit mode
     throw OperationException("\"key doesn't exist in the table.\"");
   }
-
+  // get the value associated with the key and push onto stack
   std::string val = table->get(key);
   m_stack->push(val);
+  // unlock only for autocommit mode
   unlock_table(table);
   return reply_ok();
 }
-
 
 Message ClientConnection::handle_arithmetic(MessageType type)
 {
@@ -243,53 +207,27 @@ Message ClientConnection::handle_arithmetic(MessageType type)
   return reply_ok();
 }
 
-/* OLD BEGIN FUNCTION
-Message ClientConnection::begin()
-{
-  if (m_server->is_autocommit()){ // curently in autocommit
-    m_server->change_mode();
-    return reply_ok();
-  } else { // in the middle of a transaction
-    throw OperationException("\"Cannot begin transaction in the middle of another transaction.\"");
-  }
-}*/
 Message ClientConnection::begin()
 {
   if (mode_status == 1) {
     throw OperationException("\"Cannot begin a transaction while already in one.\"");
   }
-  mode_status = 1;
+  mode_status = 1; // switch from autocommit to trans (0 is autocommit, 1 is trans)
   return reply_ok();
 }
-
-/* OLD COMMIT FOR FUNC
-Message ClientConnection::commit()
-{
-  // check if it is in transaction mode
-  if(m_server->is_autocommit()){
-    throw OperationException("\"No transaction has begun.\"");
-  }
-  //for each table in server, commit changes
-  for(auto table_name : locked_tables){
-    Table *table = get_server_table(table_name);
-    table->commit_changes();
-  }
-  // change mode back to default (autocommit)
-  m_server->change_mode();
-  return reply_ok();
-} */
 
 Message ClientConnection::commit()
 {
   if (mode_status == 0) {
     throw OperationException("\"no transaction has started\"");
   }
-  // we want to commit for all locked tables 
+  // we want to commit for all locked tables then unlock them when finished 
   for (auto &table_name : locked_tables) {
     Table *t = get_server_table(table_name);
     t->commit_changes();
     t->unlock();
   }
+  // clear the locked tables then exit trans mode
   locked_tables.clear();
   mode_status = 0;
   return reply_ok();
@@ -422,11 +360,13 @@ void ClientConnection::check_empty_stack(const std::string error_msg)
 
 // added for transaction
 void ClientConnection::rollback_trans() {
+  // go thru all the locked tables in this transaction
   for (auto &tname : locked_tables) {
     Table *t = get_server_table(tname);
-    t->rollback_changes();
-    t->unlock();
+    t->rollback_changes(); // revert the table's state (prior to transaction)
+    t->unlock(); // release the lock
   }
+  // clear the locked tables and exit (returns back to autocommit mode)
   locked_tables.clear();
   mode_status = 0;
 }
@@ -438,10 +378,11 @@ void ClientConnection::lock_table(Table *table) {
     // transaction mode: if it isn't alr locked, trylock
     std::string table_name = table->get_name();
     if (locked_tables.find(table_name) == locked_tables.end()) {
+      // if trylock doesnt work
       if (!table->trylock()) {
         throw FailedTransaction("\"couldn't get a lock on the table\"");
       }
-      locked_tables.insert(table_name);
+      locked_tables.insert(table_name); // success so we log this table as 'locked'
     }
   }
 }
