@@ -17,6 +17,7 @@ private:
   ValueStack *m_stack; //??
   std::set<std::string> locked_tables;
   bool login_status;
+  bool trans_status; // tracking if we are alr in a transaction 
 
   // copy constructor and assignment operator are prohibited
   ClientConnection( const ClientConnection & );
@@ -62,6 +63,7 @@ public:
   void check_has_logged_in();
   void check_empty_stack(const std::string error_msg);
 
+  void rollback_trans(); // helper function to rollback a transaction 
 };
 
 #endif // CLIENT_CONNECTION_H
