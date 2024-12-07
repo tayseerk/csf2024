@@ -8,11 +8,9 @@
 
 
 Server::Server()
-  // : mode( 0 ) // autocommit is default mode (NOT USING MODE ATM)
-  // TODO: initialize member variables
 {
   pthread_mutex_init(&mutex, NULL);
-  pthread_mutex_init(&mutex_for_tables, NULL); // just added 
+  pthread_mutex_init(&mutex_for_tables, NULL);  
 }
 
 Server::~Server()
@@ -72,25 +70,6 @@ void Server::log_error( const std::string &what )
 
 // TODO: implement member functions
 
-
-/* NOT USING MODE ATM SO REMOVE ANY REFERENCES
-bool Server::is_autocommit()
-{
-  return mode == 0; 
-}
-
-void Server::change_mode()
-{
-  // if in autocommit mode, change to transaction
-  // and vice versa
-  if(mode == 0){ 
-    mode = 1;
-  } else {
-    mode = 0;
-  }
-}
-*/
-
 int Server::accept_connection(int socket_fd, struct sockaddr_in *clientaddr) 
 {
   unsigned clientlen = sizeof(*clientaddr);
@@ -106,13 +85,6 @@ int Server::accept_connection(int socket_fd, struct sockaddr_in *clientaddr)
   return client_fd;
 }
 
-/* OLD CREATE TABLE FUNCTION
-void Server::create_table( const std::string &name )
-{
-  Table *table = new Table(name);
-  tables.emplace(name, table);
-}
-*/
 void Server::create_table( const std::string &name )
 {
   pthread_mutex_lock(&mutex_for_tables);
@@ -125,16 +97,6 @@ void Server::create_table( const std::string &name )
   pthread_mutex_unlock(&mutex_for_tables);
 }
 
-/* OLD FIND TABLE FUNCTION
-Table* Server::find_table( const std::string &name )
-{
-  if (tables.find(name)!= tables.end())
-  {
-    return tables[name];
-  }
-  return nullptr; // no table found
-}
-*/
 Table* Server::find_table( const std::string &name )
 {
   pthread_mutex_lock(&mutex_for_tables);
