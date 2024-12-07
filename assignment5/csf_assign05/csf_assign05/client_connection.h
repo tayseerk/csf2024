@@ -14,10 +14,9 @@ private:
   Server *m_server;
   int m_client_fd;
   rio_t m_fdbuf;
-  ValueStack *m_stack; //??
+  ValueStack *m_stack; 
   std::set<std::string> locked_tables;
   bool login_status;
-  //bool trans_status; // tracking if we are alr in a transaction 
   int mode_status; // mode = 0 when autocommit and mode = 1 when in transaction
   // copy constructor and assignment operator are prohibited
   ClientConnection( const ClientConnection & );
@@ -62,10 +61,10 @@ public:
   //checks
   void check_has_logged_in();
   void check_empty_stack(const std::string error_msg);
-
-  void rollback_trans(); // helper function to rollback a transaction 
-  void lock_table(Table *table);
-  void unlock_table(Table *table);
+  // more helper functions
+  void rollback_trans(); // rollback a transaction 
+  void lock_table(Table *table); // locks table right away in autocommit mode, uses trylock for trans mode
+  void unlock_table(Table *table); // unlocks when in autocommit mode, doesn't do anything in trans mode
     
 };
 
