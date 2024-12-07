@@ -63,10 +63,10 @@ void MessageSerialization::decode( const std::string &encoded_msg_, Message &msg
     }
     remove_null_char(arg_str);
     msg.push_arg(arg_str); 
-  }
+  } 
 
   if(!msg.is_valid()){
-    throw InvalidMessage("Resulting message is invalid.");
+    throw InvalidMessage("\"Invalid arguments (number and/or format)\"");
   }
 }
 
@@ -74,17 +74,16 @@ void MessageSerialization::decode( const std::string &encoded_msg_, Message &msg
  {
   // check for max size
   if(encoded_msg_.size() > msg.MAX_ENCODED_LEN){
-    throw InvalidMessage("Source message is too long");
+    throw InvalidMessage("\"Source message is too long\"");
   }
   // check for null terminator at the end
   if(encoded_msg_.back() != '\n'){
-    throw InvalidMessage("Source message lacking terminating newline.");
+    throw InvalidMessage("\"Source message lacking terminating newline.\"");
   }
  }
 
  std::string MessageSerialization::extract_string(const std::string &encoded_msg_, unsigned &index)
  {
-
   unsigned start = index; // start at current index
   // doesn't start until after whitespaces
   while(encoded_msg_[start] == ' '){

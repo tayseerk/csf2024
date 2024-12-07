@@ -21,7 +21,6 @@ void Table::lock()
 {
   // TODO: implement
   pthread_mutex_lock(&mutex);
-
 }
 
 void Table::unlock()

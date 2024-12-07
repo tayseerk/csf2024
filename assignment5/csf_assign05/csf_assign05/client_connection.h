@@ -16,6 +16,7 @@ private:
   rio_t m_fdbuf;
   ValueStack *m_stack; //??
   std::set<std::string> locked_tables;
+  bool login_status;
 
   // copy constructor and assignment operator are prohibited
   ClientConnection( const ClientConnection & );
@@ -29,6 +30,7 @@ public:
 
   // TODO: additional member functions
   Message process_handling(Message msg);
+  //process handling
   Message login(Message msg);
   Message create(Message msg);
   Message push(Message msg);
@@ -40,17 +42,23 @@ public:
   Message begin();
   Message commit();
   Message bye();
+  //success replies
   Message reply_ok();
   Message reply_data(std::string value);
+  //autocommit
   void autocommit_lock(Table* table_ptr);
   void autocommit_unlock(Table* table_ptr);
+  //more helper
   Table* get_server_table(std::string table_name);
   bool string_is_digit(std::string& str);
   std::string do_arithmetic(MessageType type, unsigned left, unsigned right);
+  //error handling
   void handle_error(const std::string error_msg, MessageType error_type);
   Message reply_error(const std::string error_msg);
   Message reply_failed(const std::string error_msg);
+  // send back
   void respond(Message reply);
+  //checks
   void check_has_logged_in();
   void check_empty_stack(const std::string error_msg);
 

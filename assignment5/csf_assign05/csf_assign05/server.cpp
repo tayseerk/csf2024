@@ -9,24 +9,19 @@
 
 Server::Server()
   : mode( 0 ) // autocommit is default mode
-  , is_logged_in (false)
   // TODO: initialize member variables
 {
-  // TODO: implement
   pthread_mutex_init(&mutex, NULL);
 }
 
 Server::~Server()
 {
-  // TODO: implement
   Close(socket_fd);
   pthread_mutex_destroy(&mutex);
 }
 
 void Server::listen( const std::string &port )
 {
-  // TODO: implement
-    std::cerr<< "listening\n"; // debugging
   try{
     int port_int = std::stoi(port);
     if(port_int < 1024 || port_int > 65535) {
@@ -35,7 +30,7 @@ void Server::listen( const std::string &port )
   } catch(...){
     fatal("Invalid port.");
   }
-
+  // open socket
   socket_fd = open_listenfd(port.c_str());
   if(socket_fd < 0) {
     fatal("Failed to listen.");
@@ -44,42 +39,28 @@ void Server::listen( const std::string &port )
 
 void Server::server_loop()
 {
-  // TODO: implement
-
-    std::cerr<< "in server loop\n"; // debugging
-
-  // Note that your code to start a worker thread for a newly-connected
-  // client might look something like this:
-  while(true){
+  while(true) { // continuously accept new connections
     struct sockaddr_in clientaddr;
-    int client_fd = accept_connection(socket_fd, &clientaddr);
-    ClientConnection *client = new ClientConnection( this, client_fd );
+    int client_fd = accept_connection(socket_fd, &clientaddr); // accept
+    ClientConnection *client = new ClientConnection( this, client_fd ); // create client
+    // create thread
     pthread_t thr_id;
     if ( pthread_create( &thr_id, nullptr, client_worker, client ) != 0 ){
       log_error( "Could not create client thread" );
       delete client;
+      pthread_detach( pthread_self() ); // detach
       continue;
     } 
-    pthread_detach( pthread_self() ); // (thr_id)?
-    
   }
-  std::cerr<< "outside server loop\n"; // debugging
 }
 
 
 void *Server::client_worker( void *arg )
 {
-  // TODO: implement
-    std::cerr<< "calling client worker\n"; // debugging
-
-  // Assuming that your ClientConnection class has a member function
-  // called chat_with_client(), your implementation might look something
-  // like this:
-
+  // start chat
   std::unique_ptr<ClientConnection> client( static_cast<ClientConnection *>( arg ) );
   client->chat_with_client();
   return nullptr;
-
 }
 
 void Server::log_error( const std::string &what )
@@ -91,12 +72,14 @@ void Server::log_error( const std::string &what )
 
 bool Server::is_autocommit()
 {
-  return mode == 0;
+  return mode == 0; 
 }
 
 void Server::change_mode()
 {
-  if(mode == 0){
+  // if in autocommit mode, change to transaction
+  // and vice versa
+  if(mode == 0){ 
     mode = 1;
   } else {
     mode = 0;
@@ -114,51 +97,27 @@ int Server::accept_connection(int socket_fd, struct sockaddr_in *clientaddr)
       log_error("Failed to accept: " +std::string(strerror(errno))); // errno?
       return -1;
     }
-    
   }
   return client_fd;
-
 }
 
 void Server::create_table( const std::string &name )
 {
-  std::cerr<< "creating table\n"; // debugging
   Table *table = new Table(name);
   tables.emplace(name, table);
 }
 
 Table* Server::find_table( const std::string &name )
 {
-    std::cerr<< "finding table\n"; // debugging
   if (tables.find(name)!= tables.end())
   {
-    std::cerr<< "table found\n"; // debugging
     return tables[name];
   }
-  std::cerr<< "no table\n"; // debugging
-  return nullptr;
+  return nullptr; // no table found
 }
 
 void Server::fatal (std::string err_message)
 {
   log_error(err_message);
   std::exit(EXIT_FAILURE);
-}
-
-void Server::log_in()
-{
-    std::cerr<< "logging in\n"; // debugging
-  is_logged_in = true;
-}
-
-void Server::log_out()
-{
-    std::cerr<< "logging out\n"; // debugging
-  is_logged_in = false;
-}
-
-bool Server::get_is_logged_in()
-{
-    std::cerr<< "checking login status\n"; // debugging
-  return is_logged_in;
 }
