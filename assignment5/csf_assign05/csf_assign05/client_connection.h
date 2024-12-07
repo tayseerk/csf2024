@@ -18,7 +18,7 @@ private:
   std::set<std::string> locked_tables;
   bool login_status;
   //bool trans_status; // tracking if we are alr in a transaction 
-  int mode_status // mode = 0 when autocommit and mode = 1 when in transaction
+  int mode_status; // mode = 0 when autocommit and mode = 1 when in transaction
   // copy constructor and assignment operator are prohibited
   ClientConnection( const ClientConnection & );
   ClientConnection &operator=( const ClientConnection & );
