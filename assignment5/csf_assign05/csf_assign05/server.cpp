@@ -8,16 +8,18 @@
 
 
 Server::Server()
-  : mode( 0 ) // autocommit is default mode
+  // : mode( 0 ) // autocommit is default mode (NOT USING MODE ATM)
   // TODO: initialize member variables
 {
   pthread_mutex_init(&mutex, NULL);
+  pthread_mutex_init(&mutex_for_tables, NULL); // just added 
 }
 
 Server::~Server()
 {
   Close(socket_fd);
   pthread_mutex_destroy(&mutex);
+  pthread_mutex_destroy(&mutex_for_tables);
 }
 
 void Server::listen( const std::string &port )
@@ -70,6 +72,8 @@ void Server::log_error( const std::string &what )
 
 // TODO: implement member functions
 
+
+/* NOT USING MODE ATM SO REMOVE ANY REFERENCES
 bool Server::is_autocommit()
 {
   return mode == 0; 
@@ -85,6 +89,7 @@ void Server::change_mode()
     mode = 0;
   }
 }
+*/
 
 int Server::accept_connection(int socket_fd, struct sockaddr_in *clientaddr) 
 {
@@ -101,12 +106,26 @@ int Server::accept_connection(int socket_fd, struct sockaddr_in *clientaddr)
   return client_fd;
 }
 
+/* OLD CREATE TABLE FUNCTION
 void Server::create_table( const std::string &name )
 {
   Table *table = new Table(name);
   tables.emplace(name, table);
 }
+*/
+void Server::create_table( const std::string &name )
+{
+  pthread_mutex_lock(&mutex_for_tables);
+  if (tables.find(name) != tables.end()) {
+    pthread_mutex_unlock(&mutex_for_tables);
+    throw OperationException("\"already created\"");
+  }
+  Table *table = new Table(name);
+  tables[name] = table;
+  pthread_mutex_unlock(&mutex_for_tables);
+}
 
+/* OLD FIND TABLE FUNCTION
 Table* Server::find_table( const std::string &name )
 {
   if (tables.find(name)!= tables.end())
@@ -114,6 +133,17 @@ Table* Server::find_table( const std::string &name )
     return tables[name];
   }
   return nullptr; // no table found
+}
+*/
+Table* Server::find_table( const std::string &name )
+{
+  pthread_mutex_lock(&mutex_for_tables);
+  Table *t = nullptr;
+  if (tables.find(name) != tables.end()) {
+    t = tables[name];
+  }
+  pthread_mutex_unlock(&mutex_for_tables);
+  return t;
 }
 
 void Server::fatal (std::string err_message)
