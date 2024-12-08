@@ -33,8 +33,9 @@ After the server accesses the 'tables' map and performs an operation/command, th
 This prevents lost updates or inconsistent states (race conditions) since only one client thread at a time can safely
 create a new table into the map or read from it. 
 - For transaction mode, I used 'pthread_mutex_trylock' for locking tables in order to prevent deadlocks. When the trylock fails
-because another transaction is holding the lock, the current transaction fails, all changes are rolled back, and a 'FAILED' response is given to the client. By doing this, indefinite blocking for a lock already in transaction mode doesn't occur, which
-prevents cyclic scenarios from leading to a deadlock.
+because another transaction is holding the lock, the current transaction fails, all changes are rolled back, and a 'FAILED' response 
+is given to the client. By doing this, indefinite blocking for a lock already in transaction mode doesn't occur, which prevents cyclic 
+scenarios from leading to a deadlock.
 
 Why are you confident that the server is free of race conditions and deadlocks?
 - None of the transactions are nested, which reduces the complexity of the lock retrieval patterns, preventing deadlock.
