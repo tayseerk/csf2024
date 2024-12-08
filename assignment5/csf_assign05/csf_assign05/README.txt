@@ -15,6 +15,7 @@ Emily Zou: Items 1 and 2 in the suggested approach
 **SYNCHRONIZATION REPORT**
 
 What data structures needed to be synchronized, and why?
+
 - The 'std::map<std::string, Table*> tables' data structure needed to be synchronized because
 multiple client threads might try to concurrently create new tables with the 'CREATE' request
 or access already existing tables with the 'GET' request. Without synchronizing all accesses to
@@ -26,7 +27,10 @@ have to be protected. If they aren't protected, we run into the risk of having i
 for the Table since one client thread could be making changes while another is rolling back changes
 in the same table (each 'Table' has its own 'pthread_mutex_t' for consistency).
 
+************
+
 How did you synchronize the data structures requiring synchronization?
+
 - I added 'pthread_mutex_t mutex_for_tables' in the Server class and ensured that whenever the server
 needed to access the 'tables' map (either for create_table or find_table), 'mutex_for_tables' is locked first.
 After the server accesses the 'tables' map and performs an operation/command, the server unlocks 'mutex_for_tables'.
@@ -37,7 +41,10 @@ because another transaction is holding the lock, the current transaction fails, 
 is given to the client. By doing this, indefinite blocking for a lock already in transaction mode doesn't occur, which prevents cyclic 
 scenarios from leading to a deadlock.
 
+************
+
 Why are you confident that the server is free of race conditions and deadlocks?
+
 - None of the transactions are nested, which reduces the complexity of the lock retrieval patterns, preventing deadlock.
 - The code rolls back on a failure and unlocks all the tables. This ensures that incomplete updates to the table are not
 processed (preventing inconsistent states) and that the tables are locked only for a while (indefinite lock).
