@@ -36,6 +36,10 @@ needed to access the 'tables' map (either for create_table or find_table), 'mute
 After the server accesses the 'tables' map and performs an operation/command, the server unlocks 'mutex_for_tables'.
 This prevents lost updates or inconsistent states (race conditions) since only one client thread at a time can safely
 create a new table into the map or read from it. 
+- For autocommit mode, when a request accesses a table such as in GET or SET, they must be locked before the request is carried out and after the request is finished.
+To ensure this, the requests first retrieve a pointer to the table. If the client is in autocommit mode, the request will automatically lock and 
+unlock the table using the table's 'pthread_mutex_lock' and 'pthread_mutex_unlock' using the table's lock() and unlock() functions. This must happen
+upon starting and ending the request. 
 - For transaction mode, I used 'pthread_mutex_trylock' for locking tables in order to prevent deadlocks. When the trylock fails
 because another transaction is holding the lock, the current transaction fails, all changes are rolled back, and a 'FAILED' response 
 is given to the client. By doing this, indefinite blocking for a lock already in transaction mode doesn't occur, which prevents cyclic 
@@ -45,6 +49,9 @@ scenarios from leading to a deadlock.
 
 Why are you confident that the server is free of race conditions and deadlocks?
 
+- In autocommit mode, each request is treated as a singular transaction. Therefore, once the request is over, lock is immediately released.
+This prevents one client from holding a lock over multiple requests, effectively avoiding deadlocks. There is no opportunity for a deadlock
+to occur since each time one client holds a lock, the other clients must wait for that client to finish their request before continuing.
 - None of the transactions are nested, which reduces the complexity of the lock retrieval patterns, preventing deadlock.
 - The code rolls back on a failure and unlocks all the tables. This ensures that incomplete updates to the table are not
 processed (preventing inconsistent states) and that the tables are locked only for a while (indefinite lock).
